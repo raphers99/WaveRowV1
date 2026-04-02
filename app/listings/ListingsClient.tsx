@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SlidersHorizontal, Home } from 'lucide-react'
@@ -10,6 +10,7 @@ import { Pill, Button } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
 import { saveListing, unsaveListing } from '@/lib/api'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Listing } from '@/types'
 
 const TYPES = ['All', 'APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM']
@@ -24,6 +25,13 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
   const [activeSort, setActiveSort] = useState('Newest')
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).auth.getSession().then(({ data }) => {
+      if (data.session) setUserId(data.session.user.id)
+    })
+  }, [])
 
   const filtered = useMemo(() => {
     let list = [...initialListings]
@@ -44,8 +52,8 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
   async function handleSave(id: string) {
     setSavedIds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) { next.delete(id); unsaveListing('', id).catch(() => {}) }
-      else { next.add(id); saveListing('', id).catch(() => {}) }
+      if (next.has(id)) { next.delete(id); unsaveListing(userId ?? '', id).catch(() => {}) }
+      else { next.add(id); saveListing(userId ?? '', id).catch(() => {}) }
       return next
     })
   }

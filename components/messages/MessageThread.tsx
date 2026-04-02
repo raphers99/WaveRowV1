@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { fetchMessages, sendMessage } from '@/lib/api'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Message } from '@/types'
 
 export function MessageThread({ conversationId, userId, otherUserId }: { conversationId: string; userId: string; otherUserId: string }) {
@@ -18,6 +19,24 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
       .then(setMessages)
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const channel = supabase
+      .channel(`messages:${conversationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `listing_id=eq.${conversationId}`
+      }, (payload) => {
+        const newMsg = payload.new as Message
+        setMessages(m => {
+          if (m.find(x => x.id === newMsg.id)) return m
+          return [...m, newMsg]
+        })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [conversationId])
 
   useEffect(() => {

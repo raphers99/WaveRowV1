@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Bed, Bath, Square, MapPin, Wifi, Car, WashingMachine, Thermometer, Dog, Dumbbell, Waves, Utensils, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Bed, Bath, Square, MapPin, Wifi, Car, WashingMachine, Thermometer, Dog, Dumbbell, Waves, Utensils, Zap, Star } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { PriceTag } from '@/components/listing/PriceTag'
 import { SubletBadge } from '@/components/listing/SubletBadge'
@@ -21,11 +21,53 @@ const AMENITY_ICONS: Record<string, React.ReactNode> = {
   'Pool': <Waves size={14} />, 'Dishwasher': <Utensils size={14} />, 'Utilities': <Zap size={14} />,
 }
 
+type ReviewWithAuthor = { id: string; author_id: string; rating: number; body: string; created_at: string; author_name?: string }
+
 export function ListingDetail({ listing }: { listing: Listing }) {
   const router = useRouter()
   const [photoIndex, setPhotoIndex] = useState(0)
   const [contacting, setContacting] = useState(false)
   const photos = listing.photos.length > 0 ? listing.photos : ['']
+
+  // Reviews
+  const [reviews, setReviews] = useState<ReviewWithAuthor[]>([])
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewBody, setReviewBody] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
+
+  useEffect(() => {
+    const supabase = getSupabase()
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setCurrentUserId(data.session.user.id)
+    })
+    supabase.from('reviews').select('*').eq('landlord_id', listing.user_id).order('created_at', { ascending: false })
+      .then(async ({ data }) => {
+        if (!data) return
+        const enriched = await Promise.all(data.map(async (r) => {
+          const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
+          return { ...r, author_name: p?.name ?? 'Anonymous' }
+        }))
+        setReviews(enriched)
+      }).catch(() => {})
+  }, [listing.user_id])
+
+  async function handleSubmitReview() {
+    if (!reviewBody.trim() || !currentUserId) return
+    setSubmittingReview(true)
+    const supabase = getSupabase()
+    await supabase.from('reviews').insert({
+      author_id: currentUserId,
+      landlord_id: listing.user_id,
+      listing_id: listing.id,
+      rating: reviewRating,
+      body: reviewBody.trim(),
+    })
+    const { data } = await supabase.from('profiles').select('name').eq('user_id', currentUserId).single()
+    setReviews(prev => [{ id: Date.now().toString(), author_id: currentUserId, rating: reviewRating, body: reviewBody.trim(), created_at: new Date().toISOString(), author_name: data?.name ?? 'You' }, ...prev])
+    setReviewBody(''); setReviewRating(5); setShowReviewForm(false); setSubmittingReview(false)
+  }
 
   async function handleContact() {
     setContacting(true)
@@ -149,6 +191,70 @@ export function ListingDetail({ listing }: { listing: Listing }) {
               </p>
             </div>
           )}
+
+          {/* Reviews */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                Reviews {reviews.length > 0 && `(${reviews.length})`}
+              </h3>
+              {currentUserId && currentUserId !== listing.user_id && (
+                <button onClick={() => setShowReviewForm(v => !v)} style={{ background: 'none', border: '1.5px solid var(--olive)', color: 'var(--olive)', borderRadius: 10, padding: '6px 14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  {showReviewForm ? 'Cancel' : 'Leave a Review'}
+                </button>
+              )}
+            </div>
+
+            <AnimatePresence>
+              {showReviewForm && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: 16 }}>
+                  <div style={{ background: 'white', borderRadius: 14, padding: 16, border: '1px solid rgba(0,103,71,0.1)' }}>
+                    <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+                      {[1,2,3,4,5].map(i => (
+                        <button key={i} onClick={() => setReviewRating(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                          <Star size={22} fill={i <= reviewRating ? '#f59e0b' : 'none'} color={i <= reviewRating ? '#f59e0b' : 'rgba(0,0,0,0.2)'} />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={reviewBody}
+                      onChange={e => setReviewBody(e.target.value)}
+                      placeholder="Share your experience with this landlord..."
+                      rows={3}
+                      className="input"
+                      style={{ marginBottom: 10, resize: 'none' }}
+                    />
+                    <button
+                      onClick={handleSubmitReview}
+                      disabled={submittingReview || !reviewBody.trim()}
+                      style={{ background: reviewBody.trim() ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: reviewBody.trim() ? 'pointer' : 'not-allowed', width: '100%' }}
+                    >
+                      {submittingReview ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {reviews.length === 0 ? (
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)' }}>No reviews yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {reviews.map(r => (
+                  <div key={r.id} style={{ background: 'white', borderRadius: 14, padding: 16, border: '1px solid rgba(0,103,71,0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{r.author_name}</span>
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        {[1,2,3,4,5].map(i => <Star key={i} size={14} fill={i <= r.rating ? '#f59e0b' : 'none'} color={i <= r.rating ? '#f59e0b' : 'rgba(0,0,0,0.15)'} />)}
+                      </div>
+                    </div>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>{r.body}</p>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text-muted)', margin: '6px 0 0' }}>{new Date(r.created_at).toLocaleDateString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </motion.div>
       </div>
 
