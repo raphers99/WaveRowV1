@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createBrowserClient } from '@supabase/ssr'
-import { LogOut, Star, Edit2, Check, X } from 'lucide-react'
+import { LogOut, Star, Edit2, Check, X, Settings, ChevronRight } from 'lucide-react'
 import { TabSwitcher, VerifiedBadge, VerificationBanner, VerificationModal } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { fetchSavedListings, fetchListings } from '@/lib/api'
@@ -273,20 +273,38 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
             )}
 
             {activeTab === 'Settings' && (
-              <div className="card" style={{ padding: 20 }}>
-                <div style={{ marginBottom: 20 }}>
-                  <p className="label-style">Email</p>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', margin: '4px 0 0' }}>{email}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                    <p className="label-style" style={{ marginBottom: 4 }}>Email</p>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', margin: 0 }}>{email}</p>
+                  </div>
+                  <div style={{ padding: '14px 20px' }}>
+                    <p className="label-style" style={{ marginBottom: 4 }}>Role</p>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', margin: 0, textTransform: 'capitalize' }}>{profile?.role ?? 'student'}</p>
+                  </div>
                 </div>
-                <div style={{ marginBottom: 24 }}>
-                  <p className="label-style">Role</p>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', margin: '4px 0 0', textTransform: 'capitalize' }}>{profile?.role ?? 'student'}</p>
-                </div>
+
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/settings')}
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Settings size={18} color="var(--olive)" />
+                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>App Settings</span>
+                  </div>
+                  <ChevronRight size={16} color="var(--text-muted)" />
+                </motion.button>
+
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleSignOut}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#ef4444', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', padding: 0 }}
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', border: 'none', color: '#ef4444', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', width: '100%' }}
                 >
                   <LogOut size={16} />
                   Sign Out
