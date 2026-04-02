@@ -127,9 +127,13 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setReviewRating(5)
     setReviews([])
     setLoadingReviews(true)
-    getSupabase().from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
-      .then(({ data }) => { setReviews(data ?? []); setLoadingReviews(false) })
-      .catch(() => setLoadingReviews(false))
+    ;(async () => {
+      try {
+        const { data } = await getSupabase().from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
+        setReviews(data ?? [])
+      } catch {}
+      setLoadingReviews(false)
+    })()
   }
 
   async function handleSignOut() {
