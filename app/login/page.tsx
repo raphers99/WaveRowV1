@@ -294,7 +294,7 @@ export default function LoginPage() {
       </div>
 
       {/* Sticky button */}
-      <div style={{ padding: '12px 16px', paddingBottom: 'calc(64px + 12px + env(safe-area-inset-bottom))', background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)' }}>
+      <div style={{ padding: '12px 16px 20px', background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)', position: 'sticky', bottom: 0, zIndex: 10 }}>
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={handleSubmit}
