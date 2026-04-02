@@ -4,10 +4,16 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Bed, Bath, Square, MapPin, Wifi, Car, WashingMachine, Thermometer, Dog, Dumbbell, Waves, Utensils, Zap } from 'lucide-react'
+import { createBrowserClient } from '@supabase/ssr'
 import { PriceTag } from '@/components/listing/PriceTag'
 import { SubletBadge } from '@/components/listing/SubletBadge'
 import { fadeUp } from '@/lib/motion'
+import { startConversation } from '@/lib/api'
 import type { Listing } from '@/types'
+
+function getSupabase() {
+  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+}
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
   'Wifi': <Wifi size={14} />, 'Parking': <Car size={14} />, 'Washer/Dryer': <WashingMachine size={14} />,
@@ -18,7 +24,23 @@ const AMENITY_ICONS: Record<string, React.ReactNode> = {
 export function ListingDetail({ listing }: { listing: Listing }) {
   const router = useRouter()
   const [photoIndex, setPhotoIndex] = useState(0)
+  const [contacting, setContacting] = useState(false)
   const photos = listing.photos.length > 0 ? listing.photos : ['']
+
+  async function handleContact() {
+    setContacting(true)
+    const supabase = getSupabase()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { router.push('/login'); return }
+    if (session.user.id === listing.user_id) { router.push('/messages'); return }
+    const conversation = await startConversation(session.user.id, listing.user_id, listing.id)
+    if (conversation) {
+      router.push(`/messages?conversation=${conversation.id}`)
+    } else {
+      router.push('/messages')
+    }
+    setContacting(false)
+  }
 
   function prev() { setPhotoIndex(i => (i - 1 + photos.length) % photos.length) }
   function next() { setPhotoIndex(i => (i + 1) % photos.length) }
@@ -132,9 +154,11 @@ export function ListingDetail({ listing }: { listing: Listing }) {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+          onClick={handleContact}
+          disabled={contacting}
+          style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
         >
-          Contact Landlord
+          {contacting ? 'Opening...' : 'Contact Landlord'}
         </motion.button>
       </div>
     </div>
