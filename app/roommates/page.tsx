@@ -257,7 +257,7 @@ export default function RoommatesPage() {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               onClick={e => e.stopPropagation()}
-              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', borderRadius: '24px 24px 0 0', padding: '20px 20px 40px', maxHeight: '85dvh', overflowY: 'auto' }}
+              style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'white', borderRadius: '24px 24px 0 0', padding: '20px 20px', paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', maxHeight: '90dvh', overflowY: 'auto' }}
             >
               {!createMode ? (
                 <>
