@@ -39,18 +39,20 @@ export function ListingDetail({ listing }: { listing: Listing }) {
 
   useEffect(() => {
     const supabase = getSupabase()
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setCurrentUserId(data.session.user.id)
-    })
-    supabase.from('reviews').select('*').eq('landlord_id', listing.user_id).order('created_at', { ascending: false })
-      .then(async ({ data }) => {
-        if (!data) return
-        const enriched = await Promise.all(data.map(async (r) => {
-          const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
-          return { ...r, author_name: p?.name ?? 'Anonymous' }
-        }))
-        setReviews(enriched)
-      }).catch(() => {})
+    ;(async () => {
+      const { data: session } = await supabase.auth.getSession()
+      if (session.session) setCurrentUserId(session.session.user.id)
+      try {
+        const { data } = await supabase.from('reviews').select('*').eq('landlord_id', listing.user_id).order('created_at', { ascending: false })
+        if (data) {
+          const enriched = await Promise.all(data.map(async (r) => {
+            const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
+            return { ...r, author_name: p?.name ?? 'Anonymous' }
+          }))
+          setReviews(enriched)
+        }
+      } catch {}
+    })()
   }, [listing.user_id])
 
   async function handleSubmitReview() {
