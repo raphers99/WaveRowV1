@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SlidersHorizontal, Home } from 'lucide-react'
+import { SlidersHorizontal, Home, Zap } from 'lucide-react'
 import { Pill, Button } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
@@ -105,6 +105,23 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
       </div>
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '20px 16px 0' }}>
+        {/* Swipe discover banner */}
+        <a href="/swipe" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
+          <motion.div
+            whileTap={{ scale: 0.98 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, var(--olive), #004d35)', borderRadius: 14, padding: '12px 16px', cursor: 'pointer' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Zap size={18} color="white" fill="white" />
+              <div>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 14, color: 'white', margin: 0 }}>Try Discover Mode</p>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'rgba(255,255,255,0.75)', margin: 0 }}>Swipe through listings fast</p>
+              </div>
+            </div>
+            <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'white', background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '4px 10px' }}>Try it →</span>
+          </motion.div>
+        </a>
+
         <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
           {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
         </p>

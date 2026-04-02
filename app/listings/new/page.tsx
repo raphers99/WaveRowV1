@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Upload, X } from 'lucide-react'
+import { ChevronLeft, Upload, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { ToggleField } from '@/components/ui'
 import { fadeUp } from '@/lib/motion'
@@ -26,6 +26,7 @@ export default function NewListingPage() {
   const [error, setError] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
   const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const [publishedId, setPublishedId] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     type: '',
@@ -127,7 +128,7 @@ export default function NewListingPage() {
         })
       }
 
-      router.push(`/listings/${listing.id}`)
+      setPublishedId(listing.id)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
       setLoading(false)
@@ -135,6 +136,38 @@ export default function NewListingPage() {
   }
 
   const progress = ((step + 1) / STEPS.length) * 100
+
+  if (publishedId) {
+    return (
+      <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', minHeight: '100dvh', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" style={{ textAlign: 'center', maxWidth: 320 }}>
+          <div style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(0,103,71,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <CheckCircle size={36} color="var(--olive)" />
+          </div>
+          <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px' }}>Listing published!</h1>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 28px', lineHeight: 1.6 }}>
+            Your listing is now live. Students can find it on WaveRow.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push(`/listings/${publishedId}`)}
+              style={{ width: '100%', background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+            >
+              View Listing
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push('/dashboard')}
+              style={{ width: '100%', background: 'white', color: 'var(--text-primary)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+            >
+              Go to Dashboard
+            </motion.button>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 160, minHeight: '100dvh', background: 'var(--surface)' }}>
@@ -304,7 +337,7 @@ export default function NewListingPage() {
                 <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(0,103,71,0.2)', borderRadius: 16, padding: '32px 20px', cursor: 'pointer', gap: 8, background: 'white', marginBottom: 16 }}>
                   <Upload size={28} color="var(--olive)" />
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>Upload Photos</span>
-                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>Tap to add photos (min. 1 required)</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>Tap to add photos (optional but recommended)</span>
                   <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handlePhotoAdd(e.target.files)} />
                 </label>
                 {photoUrls.length > 0 && (
@@ -321,6 +354,12 @@ export default function NewListingPage() {
                         </button>
                       </div>
                     ))}
+                  </div>
+                )}
+                {photos.length === 0 && (
+                  <div style={{ display: 'flex', gap: 8, background: 'rgba(245,158,11,0.08)', borderRadius: 10, padding: '10px 12px', marginTop: 4 }}>
+                    <AlertCircle size={15} color="#f59e0b" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#92400e', margin: 0 }}>Listings with photos get 3× more inquiries. You can still publish without them.</p>
                   </div>
                 )}
                 {error && <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: '#ef4444', marginTop: 12 }}>{error}</p>}

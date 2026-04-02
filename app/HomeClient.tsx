@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Search, Home, Calendar, Users, ArrowRight } from 'lucide-react'
+import { Search, Home, Calendar, Users, ArrowRight, Calculator } from 'lucide-react'
 import { Section, SectionItem, Pill } from '@/components/ui'
 import { ListingCard } from '@/components/listing'
 import { ListingSkeleton } from '@/components/listing'
@@ -246,7 +246,8 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             {[
               { icon: <Home size={22} color="var(--olive)" />, title: 'Find Housing', desc: 'Browse verified apartments near your campus.', href: '/listings', cta: 'Browse listings' },
               { icon: <Calendar size={22} color="var(--olive)" />, title: 'Short-Term Sublets', desc: 'Going abroad? Semester leases from students.', href: '/listings?sublet=true', cta: 'See sublets' },
-              { icon: <Users size={22} color="var(--olive)" />, title: 'Find Roommates', desc: 'Match with students who share your budget and lifestyle.', href: '/listings', cta: 'Find roommates' },
+              { icon: <Users size={22} color="var(--olive)" />, title: 'Find Roommates', desc: 'Match with students who share your budget and lifestyle.', href: '/roommates', cta: 'Find roommates' },
+              { icon: <Calculator size={22} color="var(--olive)" />, title: 'Rent Calculator', desc: 'Figure out what you can afford before you browse.', href: '/tools', cta: 'Calculate budget' },
             ].map((card, i) => (
               <SectionItem key={card.title} index={i + 1}>
                 <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>

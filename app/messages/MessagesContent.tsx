@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, MessageCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { ConversationList } from '@/components/messages/ConversationList'
 import { MessageThread } from '@/components/messages/MessageThread'
 import { fetchConversations } from '@/lib/api'
@@ -44,6 +45,21 @@ export function MessagesContent() {
           </div>
           {loading ? (
             <p style={{ padding: 16, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)' }}>Loading...</p>
+          ) : conversations.length === 0 ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <MessageCircle size={26} color="var(--olive)" />
+              </div>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, color: 'var(--text-primary)', margin: '0 0 8px' }}>No messages yet</p>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 24px', lineHeight: 1.6 }}>Contact a landlord from any listing to start a conversation.</p>
+              <motion.a
+                href="/listings"
+                whileTap={{ scale: 0.97 }}
+                style={{ background: 'var(--olive)', color: 'white', borderRadius: 12, padding: '11px 24px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}
+              >
+                Browse Listings
+              </motion.a>
+            </div>
           ) : (
             <ConversationList conversations={conversations} activeId={activeId} onSelect={setActiveId} />
           )}

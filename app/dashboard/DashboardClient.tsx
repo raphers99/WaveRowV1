@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createBrowserClient } from '@supabase/ssr'
-import { LogOut, Star, Edit2, Check, X, Settings, ChevronRight } from 'lucide-react'
+import { LogOut, Star, Edit2, Check, X, Settings, ChevronRight, Camera } from 'lucide-react'
 import { TabSwitcher, VerifiedBadge, VerificationBanner, VerificationModal } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { fetchSavedListings, fetchListings } from '@/lib/api'
@@ -53,6 +53,8 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
   const [nameVal, setNameVal] = useState(profile?.name ?? email.split('@')[0])
   const [bioVal, setBioVal] = useState(profile?.bio ?? '')
   const [savingProfile, setSavingProfile] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar ?? null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Reviews
   const [reviews, setReviews] = useState<Array<{ id: string; author_id: string; rating: number; body: string; created_at: string; author_name?: string }>>([])
@@ -111,6 +113,24 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setEditingBio(false)
   }
 
+  async function handleAvatarUpload(file: File) {
+    if (!file.type.startsWith('image/')) return
+    setUploadingAvatar(true)
+    try {
+      const supabase = getSupabase()
+      const ext = file.name.split('.').pop()
+      const path = `avatars/${userId}.${ext}`
+      const { error: upErr } = await supabase.storage.from('listing-images').upload(path, file, { upsert: true })
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from('listing-images').getPublicUrl(path)
+        const url = urlData.publicUrl
+        await supabase.from('profiles').update({ avatar: url }).eq('user_id', userId)
+        setAvatarUrl(url)
+      }
+    } catch {}
+    setUploadingAvatar(false)
+  }
+
   async function handleSubmitReview() {
     if (!reviewBody.trim()) return
     setSubmittingReview(true)
@@ -148,7 +168,19 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
         {/* Profile card */}
         <motion.div variants={fadeUp} initial="hidden" animate="visible" className="card" style={{ padding: '20px 20px 16px', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 12 }}>
-            <Avatar name={name} size={56} />
+            <label style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover' }} />
+                : <Avatar name={name} size={56} />
+              }
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 20, height: 20, borderRadius: '50%', background: 'var(--olive)', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {uploadingAvatar
+                  ? <span style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px solid white', borderTopColor: 'transparent', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />
+                  : <Camera size={10} color="white" />
+                }
+              </div>
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { if (e.target.files?.[0]) handleAvatarUpload(e.target.files[0]) }} />
+            </label>
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Editable name */}
               {editingName ? (
