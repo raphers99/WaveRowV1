@@ -82,7 +82,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       const supabase = getSupabase()
       supabase.from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
         .then(async ({ data }) => {
-          if (!data) { setLoadingReviews(false); return }
+          if (!data) return
           const enriched = await Promise.all(data.map(async (r) => {
             const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
             return { ...r, author_name: p?.name ?? 'Anonymous' }
