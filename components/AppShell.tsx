@@ -21,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </motion.div>
       </AnimatePresence>
-      {pathname !== '/login' && <BottomNav />}
+      {pathname !== '/login' && pathname !== '/listings/new' && <BottomNav />}
     </>
   )
 }
