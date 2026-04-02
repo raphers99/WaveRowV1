@@ -10,11 +10,16 @@ const dmSans = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], display
 export const metadata: Metadata = {
   title: 'WaveRow — Student Housing',
   description: 'Verified apartments, sublets, and roommates for students.',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon',
+  },
 }
 
 export const viewport: Viewport = {
   width: 'device-width', initialScale: 1, maximumScale: 1,
   userScalable: false, viewportFit: 'cover',
+  themeColor: '#006747',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
