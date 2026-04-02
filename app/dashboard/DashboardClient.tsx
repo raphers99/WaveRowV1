@@ -128,7 +128,8 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setReviews([])
     setLoadingReviews(true)
     getSupabase().from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
-      .then(({ data }) => setReviews(data ?? [])).catch(() => {}).finally(() => setLoadingReviews(false))
+      .then(({ data }) => { setReviews(data ?? []); setLoadingReviews(false) })
+      .catch(() => setLoadingReviews(false))
   }
 
   async function handleSignOut() {
