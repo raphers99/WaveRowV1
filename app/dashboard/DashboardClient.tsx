@@ -80,15 +80,19 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     if (activeTab === 'Reviews' && reviews.length === 0) {
       setLoadingReviews(true)
       const supabase = getSupabase()
-      supabase.from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
-        .then(async ({ data }) => {
-          if (!data) return
-          const enriched = await Promise.all(data.map(async (r) => {
-            const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
-            return { ...r, author_name: p?.name ?? 'Anonymous' }
-          }))
-          setReviews(enriched)
-        }).catch(() => {}).finally(() => setLoadingReviews(false))
+      ;(async () => {
+        try {
+          const { data } = await supabase.from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
+          if (data) {
+            const enriched = await Promise.all(data.map(async (r) => {
+              const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
+              return { ...r, author_name: p?.name ?? 'Anonymous' }
+            }))
+            setReviews(enriched)
+          }
+        } catch {}
+        setLoadingReviews(false)
+      })()
     }
   }, [activeTab, userId])
 
