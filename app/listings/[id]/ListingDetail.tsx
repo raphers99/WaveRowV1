@@ -32,11 +32,15 @@ export function ListingDetail({ listing }: { listing: Listing }) {
     const supabase = getSupabase()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.push('/login'); return }
-    if (session.user.id === listing.user_id) { router.push('/messages'); return }
-    const conversation = await startConversation(session.user.id, listing.user_id, listing.id)
-    if (conversation) {
+    if (session.user.id === listing.user_id) {
+      setContacting(false)
+      alert('This is your own listing.')
+      return
+    }
+    try {
+      const conversation = await startConversation(session.user.id, listing.user_id, listing.id)
       router.push(`/messages?conversation=${conversation.id}`)
-    } else {
+    } catch {
       router.push('/messages')
     }
     setContacting(false)
