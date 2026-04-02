@@ -136,7 +136,7 @@ export default function NewListingPage() {
   const progress = ((step + 1) / STEPS.length) * 100
 
   return (
-    <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 100, minHeight: '100dvh', background: 'var(--surface)' }}>
+    <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 160, minHeight: '100dvh', background: 'var(--surface)' }}>
       {/* Progress bar */}
       <div style={{ position: 'fixed', top: 'calc(56px + env(safe-area-inset-top))', left: 0, right: 0, height: 3, background: 'rgba(0,103,71,0.1)', zIndex: 40 }}>
         <motion.div
@@ -331,7 +331,7 @@ export default function NewListingPage() {
       </div>
 
       {/* Fixed bottom buttons */}
-      <div style={{ position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom))', left: 0, right: 0, padding: '12px 16px', background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)' }}>
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)', zIndex: 40 }}>
         <motion.button
           whileHover={{ scale: canProceed() ? 1.01 : 1 }}
           whileTap={{ scale: canProceed() ? 0.98 : 1 }}
