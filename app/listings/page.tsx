@@ -1,19 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Listing } from '@/types'
-import { HomeClient } from './HomeClient'
+import { ListingsClient } from './ListingsClient'
 
-export default async function HomePage() {
+export default async function ListingsPage() {
   const supabase = await createClient()
-  let featured: Listing[] = []
+  let listings: Listing[] = []
   try {
     const { data } = await supabase
       .from('listings')
       .select('*')
       .eq('status', 'ACTIVE')
       .order('created_at', { ascending: false })
-      .limit(6)
-    featured = (data ?? []) as Listing[]
+    listings = (data ?? []) as Listing[]
   } catch {}
 
-  return <HomeClient featured={featured} />
+  return <ListingsClient initialListings={listings} />
 }
