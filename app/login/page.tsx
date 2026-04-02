@@ -63,7 +63,7 @@ export default function LoginPage() {
         verification_type: role,
       }, { onConflict: 'user_id' })
     }
-    router.replace('/listings')
+    window.location.href = '/listings'
   }
 
   // --- Password flow (landlord) ---
@@ -76,7 +76,7 @@ export default function LoginPage() {
       const { error: e } = await supabase.auth.signInWithPassword({ email, password })
       setLoading(false)
       if (e) { setError(e.message); return }
-      router.replace('/listings')
+      window.location.href = '/listings'
     } else {
       const { data, error: e } = await supabase.auth.signUp({ email, password, options: { data: { role: 'landlord' } } })
       setLoading(false)
@@ -91,7 +91,7 @@ export default function LoginPage() {
           verification_type: 'landlord',
         }, { onConflict: 'user_id' })
       }
-      router.replace('/listings')
+      window.location.href = '/listings'
     }
   }
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import AppShell from '@/components/AppShell'
 import './globals.css'
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} data-scroll-behavior="smooth">
       <body style={{ backgroundColor: 'var(--surface)', minHeight: '100dvh' }}>
         <AppShell>{children}</AppShell>
+        <SpeedInsights />
       </body>
     </html>
   )
