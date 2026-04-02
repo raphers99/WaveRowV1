@@ -56,7 +56,7 @@ export default function NewListingPage() {
     if (step === 0) return !!form.type
     if (step === 1) return !!form.rent && form.beds > 0 && form.baths > 0
     if (step === 2) return !!form.address && !!form.neighborhood
-    if (step === 4) return photos.length > 0
+    if (step === 4) return true
     return true
   }
 
@@ -91,6 +91,7 @@ export default function NewListingPage() {
         .from('listings')
         .insert({
           user_id: session.user.id,
+          title: form.description ? form.description.slice(0, 60) : form.address,
           type: form.type,
           beds: form.beds,
           baths: form.baths,
@@ -127,8 +128,8 @@ export default function NewListingPage() {
       }
 
       router.push(`/listings/${listing.id}`)
-    } catch (e) {
-      setError('Something went wrong. Please try again.')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
       setLoading(false)
     }
   }
