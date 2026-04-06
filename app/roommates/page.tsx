@@ -78,11 +78,11 @@ export default function RoommatesPage() {
       const [profilesRes, groupsRes, myProfileRes] = await Promise.race([
         Promise.all([
           supabase.from('roommate_profiles')
-            .select('*, profiles(name)')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(50),
           supabase.from('roommate_groups')
-            .select('*, profiles(name)')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(50),
           supabase.from('roommate_profiles').select('id').eq('user_id', uid).maybeSingle(),
@@ -95,9 +95,23 @@ export default function RoommatesPage() {
 
       if (myProfileRes.data) setHasProfile(true)
 
-      const enrichedProfiles = (profilesRes.data ?? []).map((p: RoommateProfile & { profiles?: { name?: string } }) => ({
+      // Batch-fetch names for all user_ids (no FK join needed)
+      const profileUserIds = (profilesRes.data ?? []).map((p: RoommateProfile) => p.user_id)
+      const groupCreatorIds = (groupsRes.data ?? []).map((g: RoommateGroup) => g.created_by)
+      const allUserIds = [...new Set([...profileUserIds, ...groupCreatorIds])]
+
+      const { data: nameRows } = allUserIds.length > 0
+        ? await supabase.from('profiles').select('user_id, name').in('user_id', allUserIds)
+        : { data: [] }
+
+      const nameMap: Record<string, string> = {}
+      for (const row of nameRows ?? []) {
+        nameMap[row.user_id] = row.name
+      }
+
+      const enrichedProfiles = (profilesRes.data ?? []).map((p: RoommateProfile) => ({
         ...p,
-        name: p.profiles?.name ?? 'Student',
+        name: nameMap[p.user_id] ?? 'Student',
       }))
       setProfiles(enrichedProfiles)
 
@@ -111,10 +125,10 @@ export default function RoommatesPage() {
         countMap[row.group_id] = (countMap[row.group_id] ?? 0) + 1
       }
 
-      const enrichedGroups = (groupsRes.data ?? []).map((g: RoommateGroup & { profiles?: { name?: string } }) => ({
+      const enrichedGroups = (groupsRes.data ?? []).map((g: RoommateGroup) => ({
         ...g,
         member_count: countMap[g.id] ?? 1,
-        creator_name: g.profiles?.name ?? 'Someone',
+        creator_name: nameMap[g.created_by] ?? 'Someone',
       }))
       setGroups(enrichedGroups)
     } catch (err) {

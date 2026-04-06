@@ -10,12 +10,17 @@ const dmSans = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], display
 
 export const metadata: Metadata = {
   title: 'WaveRow — Student Housing',
-  description: 'Verified apartments, sublets, and roommates for students.',
+  description: 'Bridging the gap between students and landlords.',
   manifest: '/site.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'WaveRow',
     statusBarStyle: 'default',
+  },
+  openGraph: {
+    title: 'WaveRow — Student Housing',
+    description: 'Bridging the gap between students and landlords.',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'WaveRow — Student Housing' }],
   },
   icons: {
     icon: [

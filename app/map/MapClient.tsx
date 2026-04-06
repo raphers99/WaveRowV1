@@ -243,6 +243,9 @@ export default function MapClient() {
       try {
       await google.maps.importLibrary('marker')
 
+      // Re-check after async gap — component may have unmounted during await
+      if (!mapRef.current || mapInstance.current) return
+
       // Build popup class after google.maps is available
       PopupClass.current = makePopupClass((path) => router.push(path))
 

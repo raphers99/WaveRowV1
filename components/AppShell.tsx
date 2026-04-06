@@ -47,12 +47,12 @@ function GlobalFooter() {
 
         {/* Disclosure */}
         <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, margin: '0 0 20px' }}>
-          WaveRow is a student housing marketplace that connects students with landlords and subletters. WaveRow does not own, manage, or guarantee any listed properties, and is not a licensed real estate broker or agent. All transactions are between the parties directly. WaveRow makes no representations about the accuracy of listings and is not responsible for the outcome of any housing arrangement.
+          WaveRow is not a licensed real estate broker. Listings are provided by users and have not been independently verified. WaveRow does not own, manage, or guarantee any listed properties. All transactions are made directly between users. WaveRow is not responsible for the outcome of any housing arrangement.
         </p>
 
         {/* Copyright */}
         <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'rgba(255,255,255,0.3)', margin: 0 }}>
-          © 2025 WaveRow. All rights reserved.
+          © {new Date().getFullYear()} WaveRow. All rights reserved.
         </p>
       </div>
     </footer>
@@ -67,7 +67,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <Navbar />
       {/* Plain wrapper: AnimatePresence + motion here caused hard crashes on static/Vercel builds (React 19 + framer-motion route transitions). */}
-      <div key={pathname} style={{ minHeight: '100dvh' }}>
+      <div style={{ minHeight: '100dvh' }}>
         {children}
         {!hideChrome && <GlobalFooter />}
       </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Search, MapPin, ArrowRight, Shield, MessageCircle, Home, Calendar } from 'lucide-react'
+import { Search, MapPin, ArrowRight, Shield, MessageCircle, Lock, Calendar, Users } from 'lucide-react'
 import { Section, SectionItem } from '@/components/ui'
 import { ListingCard } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
@@ -33,7 +33,12 @@ const MOCK_CARDS = [
   },
 ]
 
-function MockCard({ card }: { card: typeof MOCK_CARDS[0] }) {
+/** Masks the house number in an address, e.g. "1412 Audubon St" → "14XX Audubon St" */
+function maskAddress(address: string): string {
+  return address.replace(/^(\d{1,2})\d+/, (_, prefix: string) => `${prefix}XX`)
+}
+
+function MockCard({ card, masked = false }: { card: typeof MOCK_CARDS[0]; masked?: boolean }) {
   return (
     <div style={{ background: 'white', borderRadius: 20, border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
       <div style={{ aspectRatio: '16/9', background: card.bgColor, position: 'relative' }}>
@@ -42,21 +47,63 @@ function MockCard({ card }: { card: typeof MOCK_CARDS[0] }) {
         )}
       </div>
       <div style={{ padding: '16px 18px 18px' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 22, color: 'var(--olive)', margin: '0 0 4px' }}>
-          ${card.rent.toLocaleString()}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-dm-sans)' }}>/mo</span>
-        </div>
+        {masked ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(0,103,71,0.07)', borderRadius: 99, padding: '4px 12px', marginBottom: 8 }}>
+            <Lock size={11} color="var(--olive)" />
+            <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'var(--olive)' }}>Sign in to see price</span>
+          </div>
+        ) : (
+          <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 22, color: 'var(--olive)', margin: '0 0 4px' }}>
+            ${card.rent.toLocaleString()}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-dm-sans)' }}>/mo</span>
+          </div>
+        )}
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', margin: '0 0 4px' }}>{card.title}</div>
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
           {card.beds} bed · {card.baths} bath
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
           <MapPin size={12} color="var(--text-muted)" />
-          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>{card.address}</span>
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>
+            {masked ? maskAddress(card.address) : card.address}
+          </span>
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {card.tags.map(tag => (
-            <span key={tag} style={{ fontSize: 11, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', padding: '3px 10px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>{tag}</span>
-          ))}
+        {!masked && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {card.tags.map(tag => (
+              <span key={tag} style={{ fontSize: 11, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', padding: '3px 10px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Renders a real Listing with address and price masked for unauthenticated users. */
+function MaskedListingCard({ listing }: { listing: Listing }) {
+  return (
+    <div style={{ background: 'white', borderRadius: 20, border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ aspectRatio: '16/9', background: '#2D5A3D', position: 'relative' }}>
+        {listing.is_sublease && (
+          <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 99, fontFamily: 'DM Sans, system-ui, sans-serif', letterSpacing: '0.05em' }}>SUBLET</span>
+        )}
+      </div>
+      <div style={{ padding: '16px 18px 18px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'rgba(0,103,71,0.07)', borderRadius: 99, padding: '4px 12px', marginBottom: 8 }}>
+          <Lock size={11} color="var(--olive)" />
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'var(--olive)' }}>Sign in to see price</span>
+        </div>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+          {listing.title ?? 'Available Unit'}
+        </div>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+          {listing.beds} bed · {listing.baths} bath
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <MapPin size={12} color="var(--text-muted)" />
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>
+            {maskAddress(listing.address)}
+          </span>
         </div>
       </div>
     </div>
@@ -221,7 +268,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
         >
           <Shield size={15} color="var(--olive)" strokeWidth={2} />
           <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--olive)', fontWeight: 600 }}>
-            100% Verified Tulane Users · @tulane.edu login required
+            100% Verified Tulane Users · Student-Only Community
           </span>
         </motion.div>
       </div>
@@ -238,7 +285,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
           {featured.length === 0 ? (
             /* Always show 3 mock cards — never an empty section */
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
-              {MOCK_CARDS.map(card => <MockCard key={card.id} card={card} />)}
+              {MOCK_CARDS.map(card => <MockCard key={card.id} card={card} masked={!isAuthenticated} />)}
             </div>
           ) : (
             <motion.div
@@ -247,15 +294,17 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               animate="visible"
               style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}
             >
-              {/* Real listings */}
+              {/* Real listings — show full data only when authenticated */}
               {featured.slice(0, 3).map((listing, i) => (
                 <motion.div key={listing.id} variants={fadeUp} custom={i}>
-                  <ListingCard listing={listing} onClick={() => {}} onSave={() => {}} />
+                  {isAuthenticated
+                    ? <ListingCard listing={listing} onClick={() => {}} onSave={() => {}} />
+                    : <MaskedListingCard listing={listing} />}
                 </motion.div>
               ))}
               {/* Pad with mocks if Supabase returned fewer than 3 */}
               {featured.length < 3 && MOCK_CARDS.slice(0, 3 - featured.length).map(card => (
-                <MockCard key={card.id} card={card} />
+                <MockCard key={card.id} card={card} masked={!isAuthenticated} />
               ))}
             </motion.div>
           )}
@@ -273,7 +322,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
           </div>
         </div>
 
-        {/* Change 5: How It Works — 3-step format with correct copy */}
+        {/* How It Works — exactly 3 steps */}
         <Section>
           <SectionItem index={0}>
             <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 28, fontWeight: 700, margin: '48px 0 24px', color: 'var(--text-primary)' }}>How It Works</h2>
@@ -282,27 +331,21 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             {[
               {
                 num: '01',
-                title: 'Create Your Account',
-                desc: 'Create a free account using your @tulane.edu email address.',
-                icon: <Home size={20} color="var(--olive)" />,
+                title: 'Verify with @tulane.edu',
+                desc: 'Sign up in seconds using your university email. A 6-digit code is sent to your @tulane.edu address — no password required.',
+                icon: <Shield size={20} color="var(--olive)" />,
               },
               {
                 num: '02',
-                title: 'Browse Listings',
-                desc: 'Search verified apartments, sublets, and roommate profiles near your campus.',
+                title: 'Browse vetted Uptown listings',
+                desc: 'Every property is in a student-friendly Uptown neighborhood, posted by a verified WaveRow user.',
                 icon: <Search size={20} color="var(--olive)" />,
               },
               {
                 num: '03',
-                title: 'Get in Touch',
-                desc: 'Message the landlord directly through WaveRow.',
+                title: 'Securely message landlords or find roommates',
+                desc: 'Message landlords or students directly through WaveRow — no middleman, no third-party apps.',
                 icon: <MessageCircle size={20} color="var(--olive)" />,
-              },
-              {
-                num: '04',
-                title: 'Short-Term Sublets',
-                desc: 'Going abroad? Find semester sublets from other students.',
-                icon: <Calendar size={20} color="var(--olive)" />,
               },
             ].map((step, i) => (
               <SectionItem key={step.num} index={i + 1}>
@@ -322,6 +365,49 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             ))}
           </div>
         </Section>
+
+        {/* Platform Features — Short-Term Sublets + Roommate Matching */}
+        <div style={{ paddingBottom: 8 }}>
+          <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 700, margin: '0 0 16px', color: 'var(--text-primary)' }}>Platform Features</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+            {[
+              {
+                icon: <Calendar size={22} color="var(--olive)" />,
+                title: 'Short-Term Sublets',
+                desc: 'Going abroad or leaving for the summer? Find and post semester sublets from fellow students.',
+                href: '/sublets',
+              },
+              {
+                icon: <Users size={22} color="var(--olive)" />,
+                title: 'Roommate Matching',
+                desc: 'Browse roommate profiles, filter by budget and lifestyle, and form groups — all in one place.',
+                href: '/roommates',
+              },
+            ].map(feat => (
+              <motion.div
+                key={feat.title}
+                whileHover={{ y: -2 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Link href={feat.href} style={{ textDecoration: 'none', display: 'block' }}>
+                  <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, height: '100%', cursor: 'pointer' }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {feat.icon}
+                    </div>
+                    <div>
+                      <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{feat.title}</h3>
+                      <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>{feat.desc}</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 'auto' }}>
+                      <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 600, color: 'var(--olive)' }}>Explore</span>
+                      <ArrowRight size={13} color="var(--olive)" />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
 
         {/* Change 4: CTA Banner — auth-aware create button (not button-in-a-link) */}
         <motion.div
