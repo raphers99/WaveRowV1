@@ -12,12 +12,14 @@ function ListingsPageInner() {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(0)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const fetchPage = useCallback(async (pageIndex: number, replace: boolean) => {
     try {
-      const { data } = await createBrowserClient(
+      const { data, error } = await createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       )
         .from('listings')
         .select('*')
@@ -25,11 +27,18 @@ function ListingsPageInner() {
         .order('created_at', { ascending: false })
         .range(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE - 1)
 
+      if (error) throw error
       const results = (data ?? []) as Listing[]
       if (replace) setListings(results)
       else setListings(prev => [...prev, ...results])
       setHasMore(results.length === PAGE_SIZE)
-    } catch {}
+      setFetchError(null)
+    } catch (err) {
+      console.error('[ListingsPage] fetch failed:', err)
+      setFetchError('Could not load listings. Please try again.')
+    } finally {
+      setInitialLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -45,7 +54,23 @@ function ListingsPageInner() {
     setLoadingMore(false)
   }
 
-  return <ListingsClient initialListings={listings} hasMore={hasMore} loadingMore={loadingMore} onLoadMore={loadMore} />
+  function retry() {
+    setFetchError(null)
+    setInitialLoading(true)
+    fetchPage(0, true)
+  }
+
+  return (
+    <ListingsClient
+      initialListings={listings}
+      hasMore={hasMore}
+      loadingMore={loadingMore}
+      onLoadMore={loadMore}
+      loading={initialLoading}
+      error={fetchError}
+      onRetry={retry}
+    />
+  )
 }
 
 export default function ListingsPage() {

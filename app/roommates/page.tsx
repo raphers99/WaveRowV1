@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Users } from 'lucide-react'
+import { Plus, Users, AlertTriangle, RefreshCw } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 import { TabSwitcher } from '@/components/ui'
 import { staggerContainer, fadeUp } from '@/lib/motion'
@@ -36,6 +36,7 @@ export default function RoommatesPage() {
   const [profiles, setProfiles] = useState<RoommateProfile[]>([])
   const [groups, setGroups] = useState<RoommateGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [hasProfile, setHasProfile] = useState(false)
 
   // Create profile form
@@ -66,51 +67,62 @@ export default function RoommatesPage() {
 
   async function loadData(uid: string) {
     setLoading(true)
+    setLoadError(null)
     const supabase = getSupabase()
 
-    const [profilesRes, groupsRes, myProfileRes] = await Promise.all([
-      // Single query: join profiles table directly
-      supabase.from('roommate_profiles')
-        .select('*, profiles(name)')
-        .order('created_at', { ascending: false })
-        .limit(50),
-      // Single query: join member counts and creator name
-      supabase.from('roommate_groups')
-        .select('*, profiles(name)')
-        .order('created_at', { ascending: false })
-        .limit(50),
-      supabase.from('roommate_profiles').select('id').eq('user_id', uid).maybeSingle(),
-    ])
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out. Please check your connection.')), 8000)
+    )
 
-    if (myProfileRes.data) setHasProfile(true)
+    try {
+      const [profilesRes, groupsRes, myProfileRes] = await Promise.race([
+        Promise.all([
+          supabase.from('roommate_profiles')
+            .select('*, profiles(name)')
+            .order('created_at', { ascending: false })
+            .limit(50),
+          supabase.from('roommate_groups')
+            .select('*, profiles(name)')
+            .order('created_at', { ascending: false })
+            .limit(50),
+          supabase.from('roommate_profiles').select('id').eq('user_id', uid).maybeSingle(),
+        ]),
+        timeout,
+      ])
 
-    // Flatten joined profile name
-    const enrichedProfiles = (profilesRes.data ?? []).map((p: RoommateProfile & { profiles?: { name?: string } }) => ({
-      ...p,
-      name: p.profiles?.name ?? 'Student',
-    }))
-    setProfiles(enrichedProfiles)
+      if (profilesRes.error) throw profilesRes.error
+      if (groupsRes.error) throw groupsRes.error
 
-    // For group member counts, one batched query instead of per-group
-    const groupIds = (groupsRes.data ?? []).map((g: RoommateGroup) => g.id)
-    const { data: memberCounts } = groupIds.length > 0
-      ? await supabase.from('roommate_group_members')
-          .select('group_id')
-          .in('group_id', groupIds)
-      : { data: [] }
+      if (myProfileRes.data) setHasProfile(true)
 
-    const countMap: Record<string, number> = {}
-    for (const row of memberCounts ?? []) {
-      countMap[row.group_id] = (countMap[row.group_id] ?? 0) + 1
+      const enrichedProfiles = (profilesRes.data ?? []).map((p: RoommateProfile & { profiles?: { name?: string } }) => ({
+        ...p,
+        name: p.profiles?.name ?? 'Student',
+      }))
+      setProfiles(enrichedProfiles)
+
+      const groupIds = (groupsRes.data ?? []).map((g: RoommateGroup) => g.id)
+      const { data: memberCounts } = groupIds.length > 0
+        ? await supabase.from('roommate_group_members').select('group_id').in('group_id', groupIds)
+        : { data: [] }
+
+      const countMap: Record<string, number> = {}
+      for (const row of memberCounts ?? []) {
+        countMap[row.group_id] = (countMap[row.group_id] ?? 0) + 1
+      }
+
+      const enrichedGroups = (groupsRes.data ?? []).map((g: RoommateGroup & { profiles?: { name?: string } }) => ({
+        ...g,
+        member_count: countMap[g.id] ?? 1,
+        creator_name: g.profiles?.name ?? 'Someone',
+      }))
+      setGroups(enrichedGroups)
+    } catch (err) {
+      console.error('[RoommatesPage] loadData failed:', err)
+      setLoadError(err instanceof Error ? err.message : 'Could not load roommates.')
+    } finally {
+      setLoading(false)
     }
-
-    const enrichedGroups = (groupsRes.data ?? []).map((g: RoommateGroup & { profiles?: { name?: string } }) => ({
-      ...g,
-      member_count: countMap[g.id] ?? 1,
-      creator_name: g.profiles?.name ?? 'Someone',
-    }))
-    setGroups(enrichedGroups)
-    setLoading(false)
   }
 
   async function handleCreateProfile() {
@@ -184,12 +196,37 @@ export default function RoommatesPage() {
           {activeTab === 'Find a Roommate' ? (
             <motion.div key="profiles" variants={staggerContainer} initial="hidden" animate="visible" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {loading ? (
-                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>Loading...</p>
+                <>
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(0,103,71,0.08)', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ height: 16, width: 120, borderRadius: 8, background: 'rgba(0,103,71,0.08)', marginBottom: 8 }} />
+                        <div style={{ height: 13, width: 80, borderRadius: 8, background: 'rgba(0,103,71,0.06)' }} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : loadError ? (
+                <div style={{ textAlign: 'center', padding: '64px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <AlertTriangle size={24} color="#ef4444" />
+                  </div>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Could not load roommates</p>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{loadError}</p>
+                  {userId && (
+                    <button onClick={() => loadData(userId)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                      <RefreshCw size={14} />Try Again
+                    </button>
+                  )}
+                </div>
               ) : profiles.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '64px 24px' }}>
                   <Users size={48} color="var(--text-muted)" strokeWidth={1.5} style={{ marginBottom: 12 }} />
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>No roommate profiles yet.</p>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Be the first to create one!</p>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>No roommate profiles yet — be the first to add yours.</p>
+                  <button onClick={() => setShowCreate(true)} style={{ marginTop: 16, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 24px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                    Create Profile
+                  </button>
                 </div>
               ) : profiles.map((p, i) => (
                 <motion.div key={p.id} variants={fadeUp} custom={i} className="card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -223,11 +260,30 @@ export default function RoommatesPage() {
           ) : (
             <motion.div key="groups" variants={staggerContainer} initial="hidden" animate="visible" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {loading ? (
-                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', padding: 32 }}>Loading...</p>
+                <>
+                  {[1, 2].map(i => (
+                    <div key={i} className="card" style={{ padding: 16 }}>
+                      <div style={{ height: 16, width: 140, borderRadius: 8, background: 'rgba(0,103,71,0.08)', marginBottom: 8 }} />
+                      <div style={{ height: 13, width: 100, borderRadius: 8, background: 'rgba(0,103,71,0.06)' }} />
+                    </div>
+                  ))}
+                </>
+              ) : loadError ? (
+                <div style={{ textAlign: 'center', padding: '64px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <AlertTriangle size={24} color="#ef4444" />
+                  </div>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Could not load groups</p>
+                  {userId && (
+                    <button onClick={() => loadData(userId)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                      <RefreshCw size={14} />Try Again
+                    </button>
+                  )}
+                </div>
               ) : groups.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '64px 24px' }}>
                   <Users size={48} color="var(--text-muted)" strokeWidth={1.5} style={{ marginBottom: 12 }} />
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>No groups yet.</p>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>No groups yet — create one above.</p>
                 </div>
               ) : groups.map((g, i) => (
                 <motion.div key={g.id} variants={fadeUp} custom={i} className="card" style={{ padding: 16 }}>

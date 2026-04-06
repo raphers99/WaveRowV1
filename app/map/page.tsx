@@ -204,6 +204,7 @@ export default function MapPage() {
   const [mapReady, setMapReady] = useState(false)
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
+  const [mapError, setMapError] = useState<string | null>(null)
 
   // Fetch listings
   useEffect(() => {
@@ -215,7 +216,8 @@ export default function MapPage() {
       .select('id, title, address, rent, beds, baths, lat, lng')
       .eq('status', 'ACTIVE')
       .limit(200)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error('[MapPage] listings fetch error:', error)
         setListings((data ?? []) as Listing[])
         setLoading(false)
       })
@@ -227,7 +229,7 @@ export default function MapPage() {
 
     async function initMap() {
       if (!mapRef.current || mapInstance.current) return
-
+      try {
       await google.maps.importLibrary('marker')
 
       // Build popup class after google.maps is available
@@ -245,6 +247,10 @@ export default function MapPage() {
       })
       geocoder.current = new google.maps.Geocoder()
       setMapReady(true)
+      } catch (err) {
+        console.error('[MapPage] map init failed:', err)
+        setMapError('Failed to load the map. Please refresh the page.')
+      }
     }
 
     if (window.google?.maps) {
@@ -369,6 +375,19 @@ export default function MapPage() {
 
     return () => { closePopup() }
   }, [mapReady, listings, closePopup])
+
+  if (mapError) {
+    return (
+      <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(64px + env(safe-area-inset-bottom))', minHeight: '100dvh', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ textAlign: 'center', maxWidth: 320 }}>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px' }}>{mapError}</p>
+          <button onClick={() => window.location.reload()} style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 24px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+            Refresh
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (!API_KEY) {
     return (
