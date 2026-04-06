@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.36.9",
-    "@anthropic-ai/sdk": "^0.80.0",
+    "@anthropic-ai/sdk": "^0.81.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capacitor/haptics": "^8.0.1",
