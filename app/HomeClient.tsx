@@ -1,20 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Search, Home, Calendar, Users, ArrowRight, Calculator, MapPin } from 'lucide-react'
+import { Search, MapPin, ArrowRight, Shield, MessageCircle, Home, Calendar } from 'lucide-react'
 import { Section, SectionItem } from '@/components/ui'
 import { ListingCard } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Listing } from '@/types'
 
-// Shown when Supabase returns no listings — never show an empty section.
+// Change 2: Always show 3 mock cards if Supabase returns 0
 const MOCK_CARDS = [
   {
     id: 'mock-1', bgColor: '#2D5A3D',
-    title: 'Spacious 2BR Near Tulane', address: '1412 Audubon St',
+    title: 'Spacious 2BR Near Campus', address: '1412 Audubon St',
     rent: 1_650, beds: 2, baths: 1, isSublease: false,
     tags: ['Furnished', 'Verified'],
   },
@@ -34,26 +35,27 @@ const MOCK_CARDS = [
 
 function MockCard({ card }: { card: typeof MOCK_CARDS[0] }) {
   return (
-    <div style={{ background: 'white', borderRadius: 20, border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-      <div style={{ aspectRatio: '4/3', background: card.bgColor, position: 'relative' }}>
+    <div style={{ background: 'white', borderRadius: 20, border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ aspectRatio: '16/9', background: card.bgColor, position: 'relative' }}>
         {card.isSublease && (
-          <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.05em' }}>SUBLET</span>
+          <span style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 99, fontFamily: 'DM Sans, system-ui, sans-serif', letterSpacing: '0.05em' }}>SUBLET</span>
         )}
       </div>
-      <div style={{ padding: '12px 14px 14px' }}>
-        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 20, color: 'var(--olive)', margin: '0 0 6px' }}>
-          ${card.rent.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-dm-sans)' }}>/mo</span>
+      <div style={{ padding: '16px 18px 18px' }}>
+        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 22, color: 'var(--olive)', margin: '0 0 4px' }}>
+          ${card.rent.toLocaleString()}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-dm-sans)' }}>/mo</span>
         </div>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', margin: '0 0 4px' }}>{card.title}</div>
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
           {card.beds} bed · {card.baths} bath
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10 }}>
           <MapPin size={12} color="var(--text-muted)" />
           <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>{card.address}</span>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {card.tags.map(tag => (
-            <span key={tag} style={{ fontSize: 11, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', padding: '2px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)' }}>{tag}</span>
+            <span key={tag} style={{ fontSize: 11, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', padding: '3px 10px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>{tag}</span>
           ))}
         </div>
       </div>
@@ -64,10 +66,28 @@ function MockCard({ card }: { card: typeof MOCK_CARDS[0] }) {
 export function HomeClient({ featured }: { featured: Listing[] }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  // Change 4: track auth state to gate the create button
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
+  useEffect(() => {
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    ).auth.getSession().then(({ data }) => {
+      setIsAuthenticated(!!data.session)
+    })
+  }, [])
+
+  // Change 3: use ?q= param (listings page reads q)
   function handleSearch() {
-    if (search.trim()) router.push(`/listings?search=${encodeURIComponent(search.trim())}`)
+    if (search.trim()) router.push(`/listings?q=${encodeURIComponent(search.trim())}`)
     else router.push('/listings')
+  }
+
+  // Change 4: auth-aware navigation for create listing
+  function handleCreate() {
+    if (isAuthenticated) router.push('/listings/new')
+    else router.push('/login?next=/listings/new')
   }
 
   const headline = 'Student Housing, Done Right.'.split(' ')
@@ -89,7 +109,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
         </div>
 
         <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto', padding: '0 20px', textAlign: 'center' }}>
-          {/* Tulane trust badge */}
+          {/* Trust badge — in hero */}
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -97,11 +117,11 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 99, padding: '5px 14px', marginBottom: 16 }}
           >
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.01em' }}>
-              Built for Tulane students · @tulane.edu login required
+              Built for students · @tulane.edu login required
             </span>
           </motion.div>
 
-          {/* Headline — flex+gap fixes word spacing on all browsers */}
+          {/* Headline */}
           <motion.h1
             style={{
               fontFamily: 'var(--font-playfair)', fontWeight: 800,
@@ -131,7 +151,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             Verified apartments, sublets, and roommates — built for students.
           </motion.p>
 
-          {/* Search bar */}
+          {/* Change 3: functional search bar → /listings?q=... */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -143,9 +163,8 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Search by address..."
+              placeholder="Search by address or neighborhood..."
               autoComplete="off"
-              autoCorrect="on"
               style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', background: 'transparent', padding: '8px 12px' }}
             />
             <motion.button
@@ -165,13 +184,13 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             transition={{ delay: 0.75, duration: 0.4 }}
             style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
           >
-            {['Furnished', 'Pet Friendly'].map(f => (
+            {['Furnished', 'Pet Friendly', 'Sublets'].map(f => (
               <motion.button
                 key={f}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
-                onClick={() => router.push(`/listings?search=${encodeURIComponent(f)}`)}
-                style={{ background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '6px 14px', fontSize: 13, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer', transition: 'background 0.2s' }}
+                onClick={() => router.push(`/listings?q=${encodeURIComponent(f)}`)}
+                style={{ background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 99, padding: '6px 14px', fontSize: 13, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer' }}
               >
                 {f}
               </motion.button>
@@ -187,45 +206,38 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
         </div>
       </div>
 
-      {/* Stats row — hardcoded, no count-up animation to avoid "0+" flash */}
-      <div style={{ background: 'white', margin: '0 16px', borderRadius: 16, marginTop: -8, boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid rgba(0,103,71,0.06)' }}>
-        <div style={{ display: 'flex', overflow: 'hidden', borderRadius: 16 }}>
-          {/* Active Listings */}
-          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}>
-            <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>47+</div>
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Active Listings</div>
-          </div>
-          {/* Students Housed */}
-          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}>
-            <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>200+</div>
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Students Housed</div>
-          </div>
-          {/* Avg. Rating */}
-          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}>
-            <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>4.8</div>
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Avg. Rating</div>
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 10, color: 'var(--text-muted)', marginTop: 2, opacity: 0.75 }}>from 30+ reviews</div>
-          </div>
-          {/* Location badge */}
-          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-            <MapPin size={16} color="var(--olive)" />
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>Uptown<br />New Orleans</div>
-          </div>
-        </div>
+      {/* Change 1: Replace fake stats row with a single trust badge */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 16px 0' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            background: 'white', border: '1px solid rgba(0,103,71,0.12)',
+            borderRadius: 99, padding: '10px 20px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+          }}
+        >
+          <Shield size={15} color="var(--olive)" strokeWidth={2} />
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--olive)', fontWeight: 600 }}>
+            100% Verified Tulane Users · @tulane.edu login required
+          </span>
+        </motion.div>
       </div>
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 16px' }}>
 
-        {/* Featured Listings — always shows content (mocks when no real data) */}
+        {/* Change 2: Featured Listings — larger cards, always min 3 */}
         <div style={{ paddingTop: 40 }}>
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 24 }}>
             <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 600, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>FRESH PICKS</p>
-            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Featured Listings</h2>
+            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 28, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Featured Listings</h2>
           </div>
 
           {featured.length === 0 ? (
-            /* Mock cards — displayed until real listings load from Supabase */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+            /* Always show 3 mock cards — never an empty section */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
               {MOCK_CARDS.map(card => <MockCard key={card.id} card={card} />)}
             </div>
           ) : (
@@ -233,17 +245,22 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}
             >
-              {featured.map((listing, i) => (
+              {/* Real listings */}
+              {featured.slice(0, 3).map((listing, i) => (
                 <motion.div key={listing.id} variants={fadeUp} custom={i}>
                   <ListingCard listing={listing} onClick={() => {}} onSave={() => {}} />
                 </motion.div>
               ))}
+              {/* Pad with mocks if Supabase returned fewer than 3 */}
+              {featured.length < 3 && MOCK_CARDS.slice(0, 3 - featured.length).map(card => (
+                <MockCard key={card.id} card={card} />
+              ))}
             </motion.div>
           )}
 
-          <div style={{ textAlign: 'center', marginTop: 24 }}>
+          <div style={{ textAlign: 'center', marginTop: 28 }}>
             <Link href="/listings" style={{ textDecoration: 'none' }}>
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -256,40 +273,57 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
           </div>
         </div>
 
-        {/* How It Works */}
+        {/* Change 5: How It Works — 3-step format with correct copy */}
         <Section>
           <SectionItem index={0}>
-            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 700, margin: '40px 0 20px', color: 'var(--text-primary)' }}>How It Works</h2>
+            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 28, fontWeight: 700, margin: '48px 0 24px', color: 'var(--text-primary)' }}>How It Works</h2>
           </SectionItem>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
             {[
-              { icon: <Home size={22} color="var(--olive)" />, title: 'Find Housing', desc: 'Browse verified apartments near your campus.', href: '/listings', cta: 'Browse listings' },
-              { icon: <Calendar size={22} color="var(--olive)" />, title: 'Short-Term Sublets', desc: 'Going abroad? Semester leases from students.', href: '/listings?sublet=true', cta: 'See sublets' },
-              { icon: <Users size={22} color="var(--olive)" />, title: 'Find Roommates', desc: 'Match with students who share your budget and lifestyle.', href: '/roommates', cta: 'Find roommates' },
-              { icon: <Calculator size={22} color="var(--olive)" />, title: 'Rent Calculator', desc: 'Figure out what you can afford before you browse.', href: '/tools', cta: 'Calculate budget' },
-            ].map((card, i) => (
-              <SectionItem key={card.title} index={i + 1}>
+              {
+                num: '01',
+                title: 'Create Your Account',
+                desc: 'Create a free account using your @tulane.edu email address.',
+                icon: <Home size={20} color="var(--olive)" />,
+              },
+              {
+                num: '02',
+                title: 'Browse Listings',
+                desc: 'Search verified apartments, sublets, and roommate profiles near your campus.',
+                icon: <Search size={20} color="var(--olive)" />,
+              },
+              {
+                num: '03',
+                title: 'Get in Touch',
+                desc: 'Message the landlord directly through WaveRow.',
+                icon: <MessageCircle size={20} color="var(--olive)" />,
+              },
+              {
+                num: '04',
+                title: 'Short-Term Sublets',
+                desc: 'Going abroad? Find semester sublets from other students.',
+                icon: <Calendar size={20} color="var(--olive)" />,
+              },
+            ].map((step, i) => (
+              <SectionItem key={step.num} index={i + 1}>
                 <div className="card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
-                  <motion.div
-                    whileHover={{ y: -3 }}
-                    style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  >
-                    {card.icon}
-                  </motion.div>
-                  <div>
-                    <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{card.title}</h3>
-                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>{card.desc}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontFamily: 'var(--font-playfair)', fontWeight: 800, fontSize: 13, color: 'rgba(0,103,71,0.3)', letterSpacing: '0.04em' }}>{step.num}</span>
+                    <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {step.icon}
+                    </div>
                   </div>
-                  <Link href={card.href} style={{ color: 'var(--olive)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, marginTop: 'auto' }}>
-                    {card.cta} <ArrowRight size={14} />
-                  </Link>
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{step.title}</h3>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>{step.desc}</p>
+                  </div>
                 </div>
               </SectionItem>
             ))}
           </div>
         </Section>
 
-        {/* CTA Banner */}
+        {/* Change 4: CTA Banner — auth-aware create button (not button-in-a-link) */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -298,16 +332,15 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
           style={{ background: 'linear-gradient(135deg, var(--olive) 0%, var(--olive-dark) 100%)', borderRadius: 20, padding: '40px 24px', textAlign: 'center', margin: '40px 0 24px' }}
         >
           <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 28, fontWeight: 800, color: 'white', margin: '0 0 10px' }}>List Your Place</h2>
-          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: 24 }}>Reach hundreds of students looking for housing. Free to list.</p>
-          <Link href="/listings/new" style={{ textDecoration: 'none' }}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              style={{ background: 'transparent', color: 'white', border: '2px solid rgba(255,255,255,0.6)', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-            >
-              Create a Listing
-            </motion.button>
-          </Link>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: 24 }}>Reach students looking for housing. Free to list.</p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleCreate}
+            style={{ background: 'transparent', color: 'white', border: '2px solid rgba(255,255,255,0.6)', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
+          >
+            Create a Listing
+          </motion.button>
         </motion.div>
 
       </div>

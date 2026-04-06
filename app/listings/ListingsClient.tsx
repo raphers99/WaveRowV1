@@ -73,7 +73,7 @@ export function ListingsClient({
   const searchParams = useSearchParams()
   const [activeType, setActiveType] = useState('All')
   const [activeSort, setActiveSort] = useState('Newest')
-  const [search, setSearch] = useState(searchParams.get('search') ?? '')
+  const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [userId, setUserId] = useState<string | null>(null)
 

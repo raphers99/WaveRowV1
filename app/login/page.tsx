@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createBrowserClient } from '@supabase/ssr'
 import { Logo } from '@/components/navigation'
@@ -17,8 +17,10 @@ const ROLES: Array<{ key: 'student' | 'subletter' | 'landlord'; title: string; d
   { key: 'landlord', title: 'Landlord', desc: 'List and manage your properties' },
 ]
 
-export default function LoginPage() {
+function LoginPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next') ?? '/listings'
   const [role, setRole] = useState<'student' | 'subletter' | 'landlord' | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -73,7 +75,7 @@ export default function LoginPage() {
         verification_type: role,
       }, { onConflict: 'user_id' })
     }
-    router.replace('/listings')
+    router.replace(nextPath)
   }
 
   // --- Password flow (landlord) ---
@@ -86,7 +88,7 @@ export default function LoginPage() {
       const { error: e } = await supabase.auth.signInWithPassword({ email, password })
       setLoading(false)
       if (e) { setError(e.message); return }
-      router.replace('/listings')
+      router.replace(nextPath)
     } else {
       const { data, error: e } = await supabase.auth.signUp({ email, password, options: { data: { role: 'landlord' } } })
       setLoading(false)
@@ -101,7 +103,7 @@ export default function LoginPage() {
           verification_type: 'landlord',
         }, { onConflict: 'user_id' })
       }
-      router.replace('/listings')
+      router.replace(nextPath)
     }
   }
 
@@ -330,5 +332,13 @@ export default function LoginPage() {
         </motion.button>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
   )
 }
