@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import type { Listing } from '@/types'
 
@@ -43,7 +44,9 @@ function setPillActive(el: HTMLElement) {
 
 // Build the ListingPopup class lazily so it never evaluates on the server
 // (google.maps.OverlayView is undefined in Node.js / during SSR).
-function makePopupClass() {
+// navigate is router.push — using it instead of <a href> prevents WKWebView
+// from doing a hard file:// navigation that would break Capacitor routing.
+function makePopupClass(navigate: (path: string) => void) {
   return class ListingPopup extends google.maps.OverlayView {
     private div: HTMLDivElement | null = null
     private position: google.maps.LatLng
@@ -130,21 +133,28 @@ function makePopupClass() {
       meta.textContent = `${this.listing.beds} bed · ${this.listing.baths} bath`
       meta.style.cssText = 'font-size:13px;color:#666;margin-bottom:12px'
 
-      // CTA button
-      const btn = document.createElement('a')
-      btn.href = `/listings/${this.listing.id}`
+      // CTA button — use button+navigate instead of <a href> so Capacitor's
+      // WKWebView doesn't do a hard file:// navigation to a non-existent path.
+      const listingPath = `/listings/${this.listing.id}`
+      const btn = document.createElement('button')
       btn.textContent = 'View Listing'
       btn.style.cssText = [
         'display:block',
+        'width:100%',
         'background:#1A3A2A',
         'color:#fff',
-        'text-decoration:none',
+        'border:none',
         'text-align:center',
         'padding:10px 0',
         'border-radius:10px',
         'font-size:14px',
         'font-weight:600',
+        'cursor:pointer',
       ].join(';')
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        navigate(listingPath)
+      })
 
       // Caret triangle
       const caret = document.createElement('div')
@@ -194,6 +204,7 @@ type PopupInstance = InstanceType<ReturnType<typeof makePopupClass>>
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function MapPage() {
+  const router = useRouter()
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<google.maps.Map | null>(null)
   const geocoder = useRef<google.maps.Geocoder | null>(null)
@@ -233,7 +244,7 @@ export default function MapPage() {
       await google.maps.importLibrary('marker')
 
       // Build popup class after google.maps is available
-      PopupClass.current = makePopupClass()
+      PopupClass.current = makePopupClass((path) => router.push(path))
 
       mapInstance.current = new google.maps.Map(mapRef.current!, {
         center: CENTER,
