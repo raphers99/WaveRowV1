@@ -1,7 +1,7 @@
 'use client'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Search, Plus, Users, User, MapPin } from 'lucide-react'
+import { Home, Search, Plus, Users, User, MapPin, MessageCircle } from 'lucide-react'
 import { NavItem } from './NavItem'
 
 const TABS = [
@@ -10,6 +10,7 @@ const TABS = [
   { href: '/listings/new', icon: Plus, label: '', isPlus: true },
   { href: '/map', icon: MapPin, label: 'Map', isPlus: false },
   { href: '/roommates', icon: Users, label: 'Roommates', isPlus: false },
+  { href: '/messages', icon: MessageCircle, label: 'Messages', isPlus: false },
   { href: '/dashboard', icon: User, label: 'Profile', isPlus: false },
 ]
 
