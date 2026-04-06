@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createBrowserClient } from '@supabase/ssr'
 import { LogOut, Star, Edit2, Check, X, Settings, ChevronRight, Camera } from 'lucide-react'
-import { TabSwitcher, VerifiedBadge, VerificationBanner, VerificationModal } from '@/components/ui'
+import { TabSwitcher, VerifiedBadge, VerificationBanner, VerificationModal, toast } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { fetchSavedListings } from '@/lib/api'
 import { trackEvent, resetUser } from '@/lib/analytics'
@@ -77,13 +76,15 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
         try {
           const { data } = await getSupabase().from('listings').select('id, user_id, title, type, address, rent, beds, baths, furnished, pets, utilities, photos, is_sublease').eq('user_id', userId).order('created_at', { ascending: false })
           setMyListings((data ?? []) as Listing[])
-        } catch {}
+        } catch {
+          toast.show('Could not load your listings', 'error')
+        }
         setLoadingMy(false)
       })()
     }
     if (activeTab === 'Saved' && savedListings.length === 0) {
       setLoadingSaved(true)
-      fetchSavedListings(userId).then(setSavedListings).catch(() => {}).finally(() => setLoadingSaved(false))
+      fetchSavedListings(userId).then(setSavedListings).catch(() => { toast.show('Could not load saved listings', 'error') }).finally(() => setLoadingSaved(false))
     }
     if (activeTab === 'Reviews' && reviews.length === 0) {
       setLoadingReviews(true)
@@ -99,7 +100,9 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
           } else {
             setReviews([])
           }
-        } catch {}
+        } catch {
+          toast.show('Could not load reviews', 'error')
+        }
         setLoadingReviews(false)
       })()
     }
@@ -135,20 +138,27 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
         await supabase.from('profiles').update({ avatar: url }).eq('user_id', userId)
         setAvatarUrl(url)
       }
-    } catch {}
+    } catch {
+      toast.show('Avatar upload failed', 'error')
+    }
     setUploadingAvatar(false)
   }
 
   async function handleSubmitReview() {
     if (!reviewBody.trim()) return
     setSubmittingReview(true)
-    await getSupabase().from('reviews').insert({
+    const { error: reviewError } = await getSupabase().from('reviews').insert({
       author_id: userId,
       landlord_id: userId,
       listing_id: reviewListingId || null,
       rating: reviewRating,
       body: reviewBody.trim(),
     })
+    if (reviewError) {
+      toast.show('Could not submit review — please try again', 'error')
+      setSubmittingReview(false)
+      return
+    }
     setSubmittingReview(false)
     setShowReviewForm(false)
     setReviewBody('')
@@ -159,7 +169,9 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       try {
         const { data } = await getSupabase().from('reviews').select('id, author_id, rating, body, created_at').eq('landlord_id', userId).order('created_at', { ascending: false })
         setReviews(data ?? [])
-      } catch {}
+      } catch {
+        toast.show('Could not reload reviews', 'error')
+      }
       setLoadingReviews(false)
     })()
   }

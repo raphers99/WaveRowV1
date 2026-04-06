@@ -72,6 +72,9 @@ export function ListingsClient({
   const searchParams = useSearchParams()
   const [activeType, setActiveType] = useState('All')
   const [activeSort, setActiveSort] = useState('Newest')
+  // inputValue updates on every keystroke (local, no re-render of heavy list).
+  // search is the debounced value that drives filtering (300ms).
+  const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [userId, setUserId] = useState<string | null>(null)
@@ -115,14 +118,20 @@ export function ListingsClient({
 
   filteredResultCountRef.current = filtered.length
 
-  // Debounced search tracking — fires 600ms after user stops typing. Ref holds latest filtered length so sort/type changes before the timer fires are reflected in result_count.
+  // Debounce inputValue → search (300ms). Keeps the input responsive while
+  // the filtered list only recalculates after the user pauses typing.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(inputValue), 300)
+    return () => clearTimeout(t)
+  }, [inputValue])
+
+  // Debounced search analytics — fires 600ms after user stops typing.
   useEffect(() => {
     if (!search) return
     const t = setTimeout(() => {
-      const rc = filteredResultCountRef.current
       trackEvent('search_listings', {
         query: search,
-        result_count: rc,
+        result_count: filteredResultCountRef.current,
         screen_name: 'browse',
       })
     }, 600)
@@ -168,8 +177,8 @@ export function ListingsClient({
       <div style={{ position: 'sticky', top: 'calc(56px + env(safe-area-inset-top))', zIndex: 40, background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '0.5px solid rgba(0,103,71,0.08)', padding: '10px 16px' }}>
         {/* Search */}
         <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
           placeholder="Search listings..."
           autoComplete="off"
           autoCorrect="on"

@@ -39,6 +39,7 @@ export const viewport: Viewport = {
   width: 'device-width', initialScale: 1,
   viewportFit: 'cover',
   themeColor: '#006747',
+  // Allow pinch-to-zoom for accessibility
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

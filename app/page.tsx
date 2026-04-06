@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui'
 import { HomeClient } from './HomeClient'
 import type { Listing } from '@/types'
 
@@ -17,8 +18,8 @@ export default function HomePage() {
           .order('created_at', { ascending: false })
           .limit(6)
         setFeatured((data ?? []) as Listing[])
-      } catch (error) {
-        console.error('Failed to fetch featured listings:', error)
+      } catch {
+        toast.show('Could not load featured listings', 'error')
       }
     })()
   }, [])

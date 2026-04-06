@@ -15,11 +15,13 @@ export type Listing = {
   created_at: string; updated_at: string;
 }
 
+export type UserRole = 'student' | 'subletter' | 'landlord'
+
 export type Profile = {
   id: string; user_id: string; name: string; avatar: string | null; bio: string | null;
   grad_year: number | null; student_id: string | null; phone: string | null;
   business_name: string | null; license_number: string | null;
-  role: "student" | "subletter" | "landlord"; verified: boolean; created_at: string;
+  role: UserRole; verified: boolean; created_at: string;
   verification_status?: VerificationStatus; verification_type?: VerificationType;
 }
 

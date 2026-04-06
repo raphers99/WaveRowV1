@@ -30,7 +30,9 @@ export async function fetchListings(filters?: ListingFilters): Promise<Listing[]
 
 export async function fetchListingById(id: string): Promise<Listing> {
   const supabase = getClient()
-  const { data, error } = await supabase.from('listings').select('*').eq('id', id).single()
+  const { data, error } = await supabase.from('listings')
+    .select('id, user_id, title, type, address, neighborhood, lat, lng, rent, deposit, beds, baths, sqft, furnished, pets, utilities, photos, amenities, proximity_tags, description, status, is_sublease, available_from, available_to, distance_to_campus, created_at, updated_at')
+    .eq('id', id).single()
   if (error) throw error
   return data as Listing
 }
@@ -64,7 +66,9 @@ export async function swipeAction(userId: string, id: string, direction: SwipeAc
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
   const supabase = getClient()
-  const { data } = await supabase.from('profiles').select('*').eq('user_id', userId).single()
+  const { data } = await supabase.from('profiles')
+    .select('id, user_id, name, avatar, bio, grad_year, student_id, phone, business_name, license_number, role, verified, created_at, verification_status, verification_type')
+    .eq('user_id', userId).single()
   return data as Profile | null
 }
 
@@ -94,6 +98,12 @@ export async function sendMessage(senderId: string, receiverId: string, conversa
   const supabase = getClient()
   const { error } = await supabase.from('messages').insert({ sender_id: senderId, receiver_id: receiverId, conversation_id: conversationId, body, read: false })
   if (error) throw error
+  // Keep conversation preview in sync. The DB trigger (migration 002) also does this,
+  // but updating here ensures the client list reflects the change immediately.
+  await supabase
+    .from('conversations')
+    .update({ last_message: body, last_message_at: new Date().toISOString() })
+    .eq('id', conversationId)
 }
 
 export async function startConversation(participantOne: string, participantTwo: string, listingId: string): Promise<Conversation> {

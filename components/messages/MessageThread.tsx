@@ -5,8 +5,9 @@ import { motion } from 'framer-motion'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { fetchMessages, sendMessage } from '@/lib/api'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
+import { toast } from '@/components/ui'
 import type { Message } from '@/types'
 
 type OptimisticMessage = Message & { status?: 'pending' | 'failed' }
@@ -20,10 +21,10 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
     setLoading(true)
     fetchMessages(conversationId)
       .then(setMessages)
-      .catch(() => {})
+      .catch(() => { toast.show('Could not load messages', 'error') })
       .finally(() => setLoading(false))
 
-    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const supabase = createClient()
     const channel = supabase
       .channel(`messages:${conversationId}`)
       .on('postgres_changes', {
@@ -77,8 +78,9 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
     try {
       await sendMessage(userId, otherUserId, conversationId, body)
       // The realtime subscription will handle replacing the optimistic message
-    } catch (error) {
+    } catch {
       setMessages(m => m.map(msg => msg.id === optimisticId ? { ...msg, status: 'failed' } : msg))
+      toast.show('Message failed to send — tap to retry', 'error')
     }
   }
 

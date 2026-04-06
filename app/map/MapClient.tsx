@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui'
 import type { Listing } from '@/types'
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -212,16 +213,13 @@ export default function MapClient() {
 
   // Fetch listings
   useEffect(() => {
-    createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    )
+    createClient()
       .from('listings')
       .select('id, title, address, rent, beds, baths, lat, lng')
       .eq('status', 'ACTIVE')
       .limit(200)
       .then(({ data, error }) => {
-        if (error) console.error('[MapPage] listings fetch error:', error)
+        if (error) toast.show('Could not load map listings', 'error')
         setListings((data ?? []) as Listing[])
         setLoading(false)
       })
@@ -253,8 +251,7 @@ export default function MapClient() {
       })
       geocoder.current = new google.maps.Geocoder()
       setMapReady(true)
-      } catch (err) {
-        console.error('[MapPage] map init failed:', err)
+      } catch {
         setMapError('Failed to load the map. Please refresh the page.')
       }
     }

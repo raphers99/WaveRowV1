@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createBrowserClient } from '@supabase/ssr'
 import { ChevronLeft, ChevronRight, Bell, Search, Shield, Smartphone, Info, Trash2, LogOut, Moon, Sun, User, Mail } from 'lucide-react'
 import { fadeUp } from '@/lib/motion'
+import { createClient } from '@/lib/supabase/client'
 
 function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createClient()
 }
 
 type Prefs = {
@@ -159,9 +159,20 @@ export default function SettingsPage() {
     if (!userId) return
     setDeleting(true)
     const supabase = getSupabase()
-    await supabase.from('profiles').delete().eq('user_id', userId)
-    await supabase.auth.signOut()
-    router.replace('/login')
+    try {
+      // Delete all user data. Order matters: delete dependent rows first.
+      await supabase.from('saved_listings').delete().eq('user_id', userId)
+      await supabase.from('messages').delete().or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      await supabase.from('conversations').delete().or(`participant_one.eq.${userId},participant_two.eq.${userId}`)
+      await supabase.from('listings').delete().eq('user_id', userId)
+      await supabase.from('reviews').delete().eq('author_id', userId)
+      await supabase.from('roommate_profiles').delete().eq('user_id', userId)
+      await supabase.from('profiles').delete().eq('user_id', userId)
+    } finally {
+      // Sign out regardless of partial failures so the user is not stuck
+      await supabase.auth.signOut()
+      router.replace('/login')
+    }
   }
 
   const sections = [
@@ -173,32 +184,6 @@ export default function SettingsPage() {
     { key: 'app', label: 'App', icon: <Smartphone size={18} />, sublabel: 'Dark mode, display' },
     { key: 'about', label: 'About', icon: <Info size={18} />, sublabel: 'Version, legal, support' },
   ]
-          {/* Profile */}
-          {activeSection === 'profile' && (
-            <motion.div key="profile" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
-              <div style={{ background: 'white', borderRadius: 16, padding: '20px 20px 8px 20px', marginTop: 20, boxShadow: '0 1px 4px rgba(0,103,71,0.06)' }}>
-                <SectionHeader title="Name" />
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  style={{ marginBottom: 16 }}
-                  aria-label="Name"
-                />
-                <SectionHeader title="Email" />
-                <input
-                  className="input"
-                  type="email"
-                  value={email}
-                  disabled
-                  style={{ marginBottom: 8, background: '#f2f2f7', color: '#888' }}
-                  aria-label="Email"
-                />
-              </div>
-            </motion.div>
-          )}
 
   return (
     <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 40, minHeight: '100dvh', background: 'var(--surface)' }}>
@@ -417,7 +402,7 @@ export default function SettingsPage() {
             >
               <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 12px' }}>Delete Account?</h3>
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 24px' }}>
-                This will permanently delete your profile. This action cannot be undone.
+                This will permanently delete your profile, listings, messages, and saved listings. This action cannot be undone. To fully remove your login credentials, email support@waverow.app after deleting.
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setShowDeleteConfirm(false)}

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Bed, Bath, Square, MapPin, Wifi, Car, WashingMachine, Thermometer, Dog, Dumbbell, Waves, Utensils, Zap, Star, AlertTriangle, Home, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/components/ui'
 import { PriceTag } from '@/components/listing/PriceTag'
 import { SubletBadge } from '@/components/listing/SubletBadge'
 import { fadeUp } from '@/lib/motion'
@@ -65,7 +66,9 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
         } else if (data) {
           setReviews([])
         }
-      } catch {}
+      } catch {
+        toast.show('Could not load reviews', 'error')
+      }
     })()
   }, [listing.user_id])
 
@@ -73,13 +76,18 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
     if (!reviewBody.trim() || !currentUserId) return
     setSubmittingReview(true)
     const supabase = getSupabase()
-    await supabase.from('reviews').insert({
+    const { error } = await supabase.from('reviews').insert({
       author_id: currentUserId,
       landlord_id: listing.user_id,
       listing_id: listing.id,
       rating: reviewRating,
       body: reviewBody.trim(),
     })
+    if (error) {
+      toast.show('Could not submit review — please try again', 'error')
+      setSubmittingReview(false)
+      return
+    }
     const { data } = await supabase.from('profiles').select('name').eq('user_id', currentUserId).maybeSingle()
     setReviews(prev => [{ id: Date.now().toString(), author_id: currentUserId, rating: reviewRating, body: reviewBody.trim(), created_at: new Date().toISOString(), author_name: data?.name ?? 'You' }, ...prev])
     setReviewBody(''); setReviewRating(5); setShowReviewForm(false); setSubmittingReview(false)
@@ -99,6 +107,7 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
       const conversation = await startConversation(session.user.id, listing.user_id, listing.id)
       router.push(`/messages?conversation=${conversation.id}`)
     } catch {
+      toast.show('Could not start conversation', 'error')
       router.push('/messages')
     }
     setContacting(false)

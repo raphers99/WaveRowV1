@@ -211,9 +211,14 @@ src/
 
 ## Deployment
 
-- Web: Vercel, auto-deploy via GitHub
+- Web: Vercel, auto-deploy via GitHub — pushing to `main` triggers a Vercel production deployment automatically. No manual deploy step needed.
 - Mobile: Expo, bundle ID com.waverow.app — requires rebuild or OTA for updates
 - Env vars required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
+### Deploy Workflow
+1. Fix/build locally — run `npm run build` to confirm no TypeScript errors before pushing
+2. Commit and push to `main` — Vercel picks it up automatically
+3. Monitor at the Vercel dashboard
 
 ---
 
@@ -224,6 +229,11 @@ src/
 3. Propose minimal change
 4. Implement safely
 5. Always explain: what is reused, what is added, why
+
+### AI Tool Policy
+- Any AI tool (Claude Code, Cursor, Copilot, ChatGPT, etc.) that makes changes to this codebase **must update this CLAUDE.md file** to reflect those changes — new routes, schema changes, new components, updated conventions, removed features, etc.
+- Keep this file as the single source of truth for any AI working on this project.
+- If a section is outdated, correct it in the same session the change is made.
 
 ## Build Priority
 

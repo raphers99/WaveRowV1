@@ -8,7 +8,7 @@ import { Search, MapPin, ArrowRight, Shield, MessageCircle, Lock, Calendar, User
 import { Section, SectionItem } from '@/components/ui'
 import { ListingCard } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import type { Listing } from '@/types'
 
 // Change 2: Always show 3 mock cards if Supabase returns 0
@@ -117,10 +117,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    ).auth.getSession().then(({ data }) => {
+    createClient().auth.getSession().then(({ data }) => {
       setIsAuthenticated(!!data.session)
     })
   }, [])
@@ -298,7 +295,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               {featured.slice(0, 3).map((listing, i) => (
                 <motion.div key={listing.id} variants={fadeUp} custom={i}>
                   {isAuthenticated
-                    ? <ListingCard listing={listing} isSaved={false} onClick={() => {}} onSave={() => {}} />
+                    ? <ListingCard listing={listing} isSaved={false} onClick={id => router.push(`/listings/${id}`)} onSave={() => {}} />
                     : <MaskedListingCard listing={listing} />}
                 </motion.div>
               ))}
