@@ -134,7 +134,7 @@ export default function SettingsPage() {
   async function handleSave() {
     if (!userId) return
     setSaving(true)
-    await getSupabase().from('profiles').update({ preferences: prefs }).eq('user_id', userId)
+    await getSupabase().from('profiles').update({ name: name.trim(), preferences: prefs }).eq('user_id', userId)
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -165,6 +165,7 @@ export default function SettingsPage() {
   }
 
   const sections = [
+    { key: 'profile', label: 'Profile', icon: <User size={18} />, sublabel: 'Name, email' },
     { key: 'notifications', label: 'Notifications', icon: <Bell size={18} />, sublabel: 'Messages, price drops, digest' },
     { key: 'search', label: 'Search Preferences', icon: <Search size={18} />, sublabel: 'Default filters & budget' },
     { key: 'privacy', label: 'Privacy', icon: <Shield size={18} />, sublabel: 'Profile visibility & blocking' },
@@ -172,6 +173,32 @@ export default function SettingsPage() {
     { key: 'app', label: 'App', icon: <Smartphone size={18} />, sublabel: 'Dark mode, display' },
     { key: 'about', label: 'About', icon: <Info size={18} />, sublabel: 'Version, legal, support' },
   ]
+          {/* Profile */}
+          {activeSection === 'profile' && (
+            <motion.div key="profile" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
+              <div style={{ background: 'white', borderRadius: 16, padding: '20px 20px 8px 20px', marginTop: 20, boxShadow: '0 1px 4px rgba(0,103,71,0.06)' }}>
+                <SectionHeader title="Name" />
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  style={{ marginBottom: 16 }}
+                  aria-label="Name"
+                />
+                <SectionHeader title="Email" />
+                <input
+                  className="input"
+                  type="email"
+                  value={email}
+                  disabled
+                  style={{ marginBottom: 8, background: '#f2f2f7', color: '#888' }}
+                  aria-label="Email"
+                />
+              </div>
+            </motion.div>
+          )}
 
   return (
     <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 40, minHeight: '100dvh', background: 'var(--surface)' }}>
