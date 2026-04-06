@@ -112,7 +112,7 @@ function MaskedListingCard({ listing }: { listing: Listing }) {
 
 export function HomeClient({ featured }: { featured: Listing[] }) {
   const router = useRouter()
-  const [search, setSearch] = useState('')
+  // Remove local search state; SearchInput will own it
   // Change 4: track auth state to gate the create button
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
@@ -123,8 +123,8 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
   }, [])
 
   // Change 3: use ?q= param (listings page reads q)
-  function handleSearch() {
-    if (search.trim()) router.push(`/listings?q=${encodeURIComponent(search.trim())}`)
+  function handleSearch(val: string) {
+    if (val.trim()) router.push(`/listings?q=${encodeURIComponent(val.trim())}`)
     else router.push('/listings')
   }
 
@@ -203,22 +203,11 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             style={{ background: 'white', borderRadius: 16, display: 'flex', alignItems: 'center', padding: '6px 6px 6px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.16)', marginBottom: 16 }}
           >
             <Search size={18} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            <SearchInput
               placeholder="Search by address or neighborhood..."
-              autoComplete="off"
-              style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', background: 'transparent', padding: '8px 12px' }}
+              inputStyle={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', background: 'transparent', padding: '8px 12px' }}
+              onSubmit={handleSearch}
             />
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleSearch}
-              style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer', flexShrink: 0 }}
-            >
-              Search
-            </motion.button>
           </motion.div>
 
           {/* Quick filters */}

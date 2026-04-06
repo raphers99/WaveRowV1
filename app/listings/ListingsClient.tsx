@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Home, Zap, AlertTriangle } from 'lucide-react'
-import { Pill, Button, toast } from '@/components/ui'
+import { Pill, Button, toast, SearchInput } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { saveListing, unsaveListing } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
@@ -72,9 +72,7 @@ export function ListingsClient({
   const searchParams = useSearchParams()
   const [activeType, setActiveType] = useState('All')
   const [activeSort, setActiveSort] = useState('Newest')
-  // inputValue updates on every keystroke (local, no re-render of heavy list).
-  // search is the debounced value that drives filtering (300ms).
-  const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
+  // SearchInput owns the raw keystroke state — this component never re-renders on each keystroke.
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [userId, setUserId] = useState<string | null>(null)
@@ -117,13 +115,6 @@ export function ListingsClient({
   }, [sourceListings, activeType, activeSort, search])
 
   filteredResultCountRef.current = filtered.length
-
-  // Debounce inputValue → search (300ms). Keeps the input responsive while
-  // the filtered list only recalculates after the user pauses typing.
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(inputValue), 300)
-    return () => clearTimeout(t)
-  }, [inputValue])
 
   // Debounced search analytics — fires 600ms after user stops typing.
   useEffect(() => {
@@ -176,13 +167,18 @@ export function ListingsClient({
       {/* Sticky header */}
       <div style={{ position: 'sticky', top: 'calc(56px + env(safe-area-inset-top))', zIndex: 40, background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '0.5px solid rgba(0,103,71,0.08)', padding: '10px 16px' }}>
         {/* Search */}
-        <input
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
+        <SearchInput
+          initialValue={search}
           placeholder="Search listings..."
-          autoComplete="off"
-          autoCorrect="on"
-          style={{ width: '100%', background: 'white', border: '1px solid rgba(0,103,71,0.12)', borderRadius: 12, padding: '10px 14px', fontFamily: 'var(--font-dm-sans)', fontSize: 15, outline: 'none', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+          inputStyle={{ width: '100%', background: 'white', border: '1px solid rgba(0,103,71,0.12)', borderRadius: 12, padding: '10px 14px', fontFamily: 'var(--font-dm-sans)', fontSize: 15, outline: 'none', color: 'var(--text-primary)', boxSizing: 'border-box' }}
+          onSearch={val => setSearch(val)}
+          onSubmit={val => {
+            // Update the URL query param for deep-linking
+            const params = new URLSearchParams(Array.from(searchParams.entries()))
+            if (val) params.set('q', val)
+            else params.delete('q')
+            router.push(`?${params.toString()}`)
+          }}
         />
         {/* Type pills */}
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, marginTop: 10, scrollSnapType: 'x mandatory' }}>
