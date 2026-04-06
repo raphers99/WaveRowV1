@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { HomeClient } from './HomeClient'
 import type { Listing } from '@/types'
 
@@ -11,10 +11,15 @@ export default function HomePage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const { data } = await createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-          .from('listings').select('*').eq('status', 'ACTIVE').order('created_at', { ascending: false }).limit(6)
+        const { data } = await createClient()
+          .from('listings').select('id, user_id, title, type, address, rent, beds, baths, furnished, pets, utilities, photos, is_sublease')
+          .eq('status', 'ACTIVE')
+          .order('created_at', { ascending: false })
+          .limit(6)
         setFeatured((data ?? []) as Listing[])
-      } catch {}
+      } catch (error) {
+        console.error('Failed to fetch featured listings:', error)
+      }
     })()
   }, [])
 

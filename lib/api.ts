@@ -14,13 +14,15 @@ export type ListingFilters = {
 
 export async function fetchListings(filters?: ListingFilters): Promise<Listing[]> {
   const supabase = getClient()
-  let query = supabase.from('listings').select('*').eq('status', 'ACTIVE')
-  if (filters?.type && filters.type !== 'all') query = query.eq('type', filters.type)
-  if (filters?.is_sublease) query = query.eq('is_sublease', true)
-  if (filters?.search) query = query.or(`address.ilike.%${filters.search}%,neighborhood.ilike.%${filters.search}%,title.ilike.%${filters.search}%`)
-  if (filters?.sort === 'price_asc') query = query.order('rent', { ascending: true })
-  else if (filters?.sort === 'price_desc') query = query.order('rent', { ascending: false })
-  else query = query.order('created_at', { ascending: false })
+  const query = supabase.from('listings').select(`
+    id, user_id, title, type, address, rent, beds, baths, furnished, pets, utilities, photos, is_sublease
+  `).eq('status', 'ACTIVE')
+  if (filters?.type && filters.type !== 'all') query.eq('type', filters.type)
+  if (filters?.is_sublease) query.eq('is_sublease', true)
+  if (filters?.search) query.or(`address.ilike.%${filters.search}%,neighborhood.ilike.%${filters.search}%,title.ilike.%${filters.search}%`)
+  if (filters?.sort === 'price_asc') query.order('rent', { ascending: true })
+  else if (filters?.sort === 'price_desc') query.order('rent', { ascending: false })
+  else query.order('created_at', { ascending: false })
   const { data, error } = await query
   if (error) throw error
   return (data ?? []) as Listing[]

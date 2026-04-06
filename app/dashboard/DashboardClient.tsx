@@ -10,12 +10,13 @@ import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { fetchSavedListings } from '@/lib/api'
 import { trackEvent, resetUser } from '@/lib/analytics'
 import { fadeUp } from '@/lib/motion'
+import { createClient } from '@/lib/supabase/client'
 import type { Profile, Listing } from '@/types'
 
 const TABS = ['My Listings', 'Saved', 'Reviews', 'Settings']
 
 function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createClient()
 }
 
 function Avatar({ name, size = 56 }: { name: string; size?: number }) {
@@ -74,7 +75,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       setLoadingMy(true)
       ;(async () => {
         try {
-          const { data } = await getSupabase().from('listings').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+          const { data } = await getSupabase().from('listings').select('id, user_id, title, type, address, rent, beds, baths, furnished, pets, utilities, photos, is_sublease').eq('user_id', userId).order('created_at', { ascending: false })
           setMyListings(data ?? [])
         } catch {}
         setLoadingMy(false)
@@ -89,7 +90,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       const supabase = getSupabase()
       ;(async () => {
         try {
-          const { data } = await supabase.from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
+          const { data } = await supabase.from('reviews').select('id, author_id, rating, body, created_at').eq('landlord_id', userId).order('created_at', { ascending: false })
           if (data && data.length > 0) {
             const authorIds = [...new Set(data.map(r => r.author_id))]
             const { data: profiles } = await supabase.from('profiles').select('user_id, name').in('user_id', authorIds)
@@ -156,7 +157,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setLoadingReviews(true)
     ;(async () => {
       try {
-        const { data } = await getSupabase().from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
+        const { data } = await getSupabase().from('reviews').select('id, author_id, rating, body, created_at').eq('landlord_id', userId).order('created_at', { ascending: false })
         setReviews(data ?? [])
       } catch {}
       setLoadingReviews(false)

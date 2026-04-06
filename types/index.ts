@@ -73,12 +73,12 @@ export type SectionItemProps = { children: React.ReactNode; index: number }
 export type SkeletonProps = { height: number; width?: number | string }
 export type InputProps = { value: string; onChange: (value: string) => void; placeholder?: string }
 export type PillProps = { label: string; active: boolean; onClick: () => void }
-export type ListingCardProps = { listing: Listing; onClick: (id: string) => void; onSave: (id: string) => void }
+export type ListingCardProps = { listing: Listing; onClick: (id: string) => void; onSave: (id: string) => void; isSaved: boolean }
 export type ListingImageProps = { src: string; alt: string }
 export type ListingMetaProps = { beds: number; baths: number; location: string }
 export type PriceTagProps = { price: number }
-export type SaveButtonProps = { isSaved: boolean; onToggle: () => void }
-export type ListingGridProps = { listings: Listing[]; onCardClick: (id: string) => void; onSave: (id: string) => void }
+export type SaveButtonProps = { isSaved: boolean; onToggle: (event: React.MouseEvent) => void }
+export type ListingGridProps = { listings: Listing[]; onCardClick: (id: string) => void; onSave: (id: string) => void; savedIds?: Set<string> }
 export type SwipeStackProps = { listings: Listing[]; onSwipe: (id: string, action: SwipeAction) => void }
 export type SwipeCardProps = { listing: Listing; onSwipe: (action: SwipeAction) => void }
 export type SwipeIndicatorsProps = { direction: SwipeAction | null }

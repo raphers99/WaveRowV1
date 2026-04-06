@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState, useCallback } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { ListingsClient } from './ListingsClient'
 import type { Listing } from '@/types'
 
@@ -17,12 +17,9 @@ function ListingsPageInner() {
 
   const fetchPage = useCallback(async (pageIndex: number, replace: boolean) => {
     try {
-      const { data, error } = await createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      )
+      const { data, error } = await createClient()
         .from('listings')
-        .select('*')
+        .select('id, user_id, title, type, address, rent, beds, baths, furnished, pets, utilities, photos, is_sublease')
         .eq('status', 'ACTIVE')
         .order('created_at', { ascending: false })
         .range(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE - 1)

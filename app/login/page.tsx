@@ -3,12 +3,12 @@
 import { useState, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/navigation'
 import { fadeUp } from '@/lib/motion'
 
 function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createClient()
 }
 
 const ROLES: Array<{ key: 'student' | 'subletter' | 'landlord'; title: string; desc: string }> = [

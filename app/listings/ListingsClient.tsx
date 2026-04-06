@@ -2,14 +2,14 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Home, Zap, AlertTriangle } from 'lucide-react'
-import { Pill, Button } from '@/components/ui'
+import { Pill, Button, toast } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { saveListing, unsaveListing } from '@/lib/api'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
-import type { Listing } from '@/types'
+import type { Listing, Profile } from '@/types'
 
 const TYPES = ['All', 'APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM']
 const TYPE_LABELS: Record<string, string> = {
@@ -68,6 +68,7 @@ export function ListingsClient({
   error?: string | null
   onRetry?: () => void
 }) {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeType, setActiveType] = useState('All')
   const [activeSort, setActiveSort] = useState('Newest')
@@ -77,8 +78,16 @@ export function ListingsClient({
   const filteredResultCountRef = useRef(0)
 
   useEffect(() => {
-    createClient().auth.getSession().then(({ data }) => {
-      if (data.session) setUserId(data.session.user.id)
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setUserId(data.session.user.id)
+        supabase.from('profiles').select('saved_listings').eq('user_id', data.session.user.id).single().then(({ data: profile }) => {
+          if (profile) {
+            setSavedIds(new Set((profile as any).saved_listings ?? []))
+          }
+        })
+      }
     })
   }, [])
 
@@ -121,20 +130,36 @@ export function ListingsClient({
   }, [search])
 
   async function handleSave(id: string) {
-    if (isMockData) return // don't attempt saves on mock data
+    if (isMockData) return
+    if (!userId) {
+      router.push('/login')
+      return
+    }
+
+    const isSaved = savedIds.has(id)
+    const originalSavedIds = new Set(savedIds)
+
+    // Optimistic update
     setSavedIds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-        unsaveListing(userId ?? '', id).catch(() => {})
-        trackEvent('unsave_listing', { listing_id: id, screen_name: 'browse' })
-      } else {
-        next.add(id)
-        saveListing(userId ?? '', id).catch(() => {})
-        trackEvent('save_listing', { listing_id: id, screen_name: 'browse' })
-      }
+      if (isSaved) next.delete(id)
+      else next.add(id)
       return next
     })
+
+    try {
+      if (isSaved) {
+        await unsaveListing(userId, id)
+        trackEvent('unsave_listing', { listing_id: id, screen_name: 'browse' })
+      } else {
+        await saveListing(userId, id)
+        trackEvent('save_listing', { listing_id: id, screen_name: 'browse' })
+      }
+    } catch (error) {
+      // Revert on failure
+      setSavedIds(originalSavedIds)
+      toast.show('Could not save listing', 'error')
+    }
   }
 
   return (
@@ -244,6 +269,7 @@ export function ListingsClient({
                   listings={filtered}
                   onCardClick={() => {}}
                   onSave={handleSave}
+                  savedIds={savedIds}
                 />
                 {hasMore && !search && activeType === 'All' && !isMockData && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>

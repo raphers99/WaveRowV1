@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Upload, X, CheckCircle, AlertCircle } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { ToggleField } from '@/components/ui'
 import { fadeUp } from '@/lib/motion'
 import type { Listing } from '@/types'
@@ -15,7 +15,7 @@ const AMENITIES = ['Furnished', 'Parking', 'Washer/Dryer', 'AC', 'Pet Friendly',
 const STEPS = ['Type', 'Details', 'Location', 'Amenities', 'Photos']
 
 function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createClient()
 }
 
 function sanitizeImageSrc(raw: string): string | null {
@@ -52,6 +52,12 @@ export default function NewListingPage() {
       if (!data.session) router.replace('/login')
     })
   }, [router])
+
+  useEffect(() => {
+    return () => {
+      photoUrls.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [photoUrls])
 
   function update(key: string, val: unknown) { setForm(f => ({ ...f, [key]: val })) }
 

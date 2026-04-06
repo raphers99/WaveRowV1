@@ -114,7 +114,7 @@ export default function SettingsPage() {
       if (!session) { router.replace('/login'); return }
       setUserId(session.user.id)
       setEmail(session.user.email ?? '')
-      const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle()
+      const { data: profile } = await supabase.from('profiles').select('name, role, preferences').eq('user_id', session.user.id).maybeSingle()
       if (profile) {
         setName(profile.name ?? '')
         setRole(profile.role ?? 'student')
@@ -255,6 +255,33 @@ export default function SettingsPage() {
             </motion.div>
           )}
 
+          {/* Profile */}
+          {activeSection === 'profile' && (
+            <motion.div key="profile" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
+              <div style={{ background: 'white', borderRadius: 16, padding: '20px 20px 8px 20px', marginTop: 20, boxShadow: '0 1px 4px rgba(0,103,71,0.06)' }}>
+                <SectionHeader title="Name" />
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  style={{ marginBottom: 16 }}
+                  aria-label="Name"
+                />
+                <SectionHeader title="Email" />
+                <input
+                  className="input"
+                  type="email"
+                  value={email}
+                  disabled
+                  style={{ marginBottom: 8, background: '#f2f2f7', color: '#888' }}
+                  aria-label="Email"
+                />
+              </div>
+            </motion.div>
+          )}
+
           {/* Notifications */}
           {activeSection === 'notifications' && (
             <motion.div key="notifications" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
@@ -363,8 +390,8 @@ export default function SettingsPage() {
             <motion.div key="about" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} transition={{ duration: 0.18 }}>
               <div style={{ background: 'white', borderRadius: 16, padding: '0 20px', marginTop: 20, boxShadow: '0 1px 4px rgba(0,103,71,0.06)' }}>
                 <SettingsRow icon={<Mail size={18} />} label="Contact Support" sublabel="support@waverow.app" onClick={() => window.open('mailto:support@waverow.app')} />
-                <SettingsRow icon={<Info size={18} />} label="Privacy Policy" onClick={() => {}} />
-                <SettingsRow icon={<Info size={18} />} label="Terms of Service" onClick={() => {}} />
+                <SettingsRow icon={<Info size={18} />} label="Privacy Policy" onClick={() => router.push('/privacy')} />
+                <SettingsRow icon={<Info size={18} />} label="Terms of Service" onClick={() => router.push('/terms')} />
                 <SettingsRow icon={<Info size={18} />} label="Version" right={<span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)' }}>1.0.0</span>} />
               </div>
               <div style={{ textAlign: 'center', marginTop: 32 }}>
@@ -390,7 +417,7 @@ export default function SettingsPage() {
             >
               <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 12px' }}>Delete Account?</h3>
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: '0 0 24px' }}>
-                This will permanently delete your account, all listings, and messages. This cannot be undone.
+                This will permanently delete your profile. This action cannot be undone.
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setShowDeleteConfirm(false)}

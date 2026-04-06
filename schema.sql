@@ -14,6 +14,9 @@ create table if not exists profiles (
   license_number text,
   role text not null default 'STUDENT',
   verified boolean not null default false,
+  preferences jsonb not null default '{}'::jsonb,
+  verification_status text not null default 'unverified',
+  verification_type text,
   created_at timestamptz not null default now()
 );
 
@@ -73,8 +76,20 @@ create table if not exists messages (
   sender_id uuid references auth.users(id) on delete cascade not null,
   receiver_id uuid references auth.users(id) on delete cascade not null,
   listing_id uuid references listings(id) on delete set null,
+  conversation_id uuid references conversations(id) on delete cascade,
   body text not null,
   read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- Conversations table
+create table if not exists conversations (
+  id uuid primary key default gen_random_uuid(),
+  listing_id uuid references listings(id) on delete set null,
+  participant_one uuid references auth.users(id) on delete cascade not null,
+  participant_two uuid references auth.users(id) on delete cascade not null,
+  last_message text,
+  last_message_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -169,6 +184,7 @@ alter table listings enable row level security;
 alter table sublet_details enable row level security;
 alter table saved_listings enable row level security;
 alter table messages enable row level security;
+alter table conversations enable row level security;
 alter table reviews enable row level security;
 alter table roommate_profiles enable row level security;
 alter table roommate_groups enable row level security;
@@ -198,6 +214,10 @@ create policy "Listing owners can manage sublet details" on sublet_details for a
 create policy "Users can view own saved listings" on saved_listings for select using (auth.uid() = user_id);
 create policy "Users can save listings" on saved_listings for insert with check (auth.uid() = user_id);
 create policy "Users can unsave listings" on saved_listings for delete using (auth.uid() = user_id);
+
+-- RLS policies: conversations
+create policy "Participants can view their conversations" on conversations for select using (auth.uid() = participant_one or auth.uid() = participant_two);
+create policy "Authenticated users can create conversations" on conversations for insert with check (auth.uid() = participant_one);
 
 -- RLS policies: messages
 create policy "Users can view their messages" on messages for select using (auth.uid() = sender_id or auth.uid() = receiver_id);
@@ -246,3 +266,21 @@ $$;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
+
+-- Auto-update conversation metadata on new message
+create or replace function update_conversation_metadata()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update conversations
+  set
+    last_message = new.body,
+    last_message_at = new.created_at
+  where
+    id = new.conversation_id;
+  return new;
+end;
+$$;
+
+create or replace trigger on_new_message
+  after insert on messages
+  for each row execute function update_conversation_metadata();

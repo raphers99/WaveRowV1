@@ -9,8 +9,10 @@ import { createBrowserClient } from '@supabase/ssr'
 import { trackEvent } from '@/lib/analytics'
 import type { Message } from '@/types'
 
+type OptimisticMessage = Message & { status?: 'pending' | 'failed' }
+
 export function MessageThread({ conversationId, userId, otherUserId }: { conversationId: string; userId: string; otherUserId: string }) {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<OptimisticMessage[]>([])
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -32,6 +34,11 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
       }, (payload) => {
         const newMsg = payload.new as Message
         setMessages(m => {
+          // Replace optimistic message if it exists, otherwise add
+          const optimisticId = m.find(x => x.status === 'pending' && x.body === newMsg.body)?.id
+          if (optimisticId) {
+            return m.map(x => x.id === optimisticId ? newMsg : x)
+          }
           if (m.find(x => x.id === newMsg.id)) return m
           return [...m, newMsg]
         })
@@ -44,9 +51,10 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function handleSend(body: string) {
-    const optimistic: Message = {
-      id: `tmp-${Date.now()}`,
+  async function handleSend(body: string, tempId?: string) {
+    const optimisticId = tempId ?? `tmp-${Date.now()}`
+    const optimisticMsg: OptimisticMessage = {
+      id: optimisticId,
       sender_id: userId,
       receiver_id: otherUserId,
       listing_id: null,
@@ -54,10 +62,24 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
       body,
       read: false,
       created_at: new Date().toISOString(),
+      status: 'pending',
     }
-    setMessages(m => [...m, optimistic])
+
+    if (tempId) {
+      // This is a retry, so we update the existing message
+      setMessages(m => m.map(msg => msg.id === tempId ? optimisticMsg : msg))
+    } else {
+      setMessages(m => [...m, optimisticMsg])
+    }
+    
     trackEvent('send_message', { conversation_id: conversationId, screen_name: 'messages' })
-    await sendMessage(userId, otherUserId, conversationId, body).catch(() => {})
+    
+    try {
+      await sendMessage(userId, otherUserId, conversationId, body)
+      // The realtime subscription will handle replacing the optimistic message
+    } catch (error) {
+      setMessages(m => m.map(msg => msg.id === optimisticId ? { ...msg, status: 'failed' } : msg))
+    }
   }
 
   return (
@@ -69,7 +91,12 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', marginTop: 40 }}>No messages yet. Start the conversation.</p>
         ) : (
           messages.map(msg => (
-            <MessageBubble key={msg.id} message={msg} isOwn={msg.sender_id === userId} />
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isOwn={msg.sender_id === userId}
+              onRetry={() => handleSend(msg.body, msg.id)}
+            />
           ))
         )}
         <div ref={bottomRef} />

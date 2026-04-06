@@ -3,6 +3,7 @@ import { Playfair_Display, DM_Sans } from 'next/font/google'
 import AppShell from '@/components/AppShell'
 import { AnalyticsProvider } from '@/components/AnalyticsProvider'
 import { SplashOverlay } from '@/components/SplashOverlay'
+import { ToastProvider } from '@/components/ui/Toast'
 import './globals.css'
 
 const playfair = Playfair_Display({ variable: '--font-playfair', subsets: ['latin'], display: 'swap', weight: ['400','700','800'] })
@@ -35,8 +36,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  width: 'device-width', initialScale: 1, maximumScale: 1,
-  userScalable: false, viewportFit: 'cover',
+  width: 'device-width', initialScale: 1,
+  viewportFit: 'cover',
   themeColor: '#006747',
 }
 
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
         <SplashOverlay />
         <AnalyticsProvider />
+        <ToastProvider />
         <AppShell>{children}</AppShell>
       </body>
     </html>

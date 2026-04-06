@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { ChevronLeft, MessageCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { ConversationList } from '@/components/messages/ConversationList'
@@ -11,7 +11,7 @@ import { fetchConversations } from '@/lib/api'
 import type { Conversation } from '@/types'
 
 function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createClient()
 }
 
 export function MessagesContent() {

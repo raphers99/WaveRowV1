@@ -452,6 +452,18 @@ export default function MapClient() {
           animation: 'shimmer 1.4s ease-in-out infinite',
         }} />
       )}
+      {!loading && listings.length === 0 && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ textAlign: 'center', padding: 24 }}>
+            <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, color: 'var(--text-primary)', margin: 0 }}>
+              No listings found in this area
+            </p>
+            <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+              Try moving the map or browsing all listings.
+            </p>
+          </div>
+        </div>
+      )}
       <div ref={mapRef} style={{ flex: 1 }} />
       <style>{`
         @keyframes shimmer {

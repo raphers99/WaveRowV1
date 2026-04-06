@@ -8,12 +8,11 @@ import { SaveButton } from './SaveButton'
 import { SubletBadge } from './SubletBadge'
 import type { ListingCardProps } from '@/types'
 
-export function ListingCard({ listing, onClick, onSave }: ListingCardProps) {
-  const [saved, setSaved] = useState(false)
-
-  function handleSave(id: string) {
-    setSaved(s => !s)
-    onSave(id)
+export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardProps) {
+  function handleSave(e: React.MouseEvent) {
+    e.preventDefault() // Prevent link navigation
+    e.stopPropagation()
+    onSave(listing.id)
   }
 
   return (
@@ -32,7 +31,7 @@ export function ListingCard({ listing, onClick, onSave }: ListingCardProps) {
         <div style={{ aspectRatio: '4/3', position: 'relative', overflow: 'hidden' }}>
           <ListingImage src={listing.photos[0]} alt={listing.title ?? listing.address} />
           <div style={{ position: 'absolute', top: 10, right: 10 }}>
-            <SaveButton isSaved={saved} onToggle={() => handleSave(listing.id)} />
+            <SaveButton isSaved={isSaved} onToggle={handleSave} />
           </div>
           {listing.is_sublease && <div style={{ position: 'absolute', top: 10, left: 10 }}><SubletBadge /></div>}
         </div>

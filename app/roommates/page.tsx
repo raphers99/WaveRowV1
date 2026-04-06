@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Users, AlertTriangle, RefreshCw } from 'lucide-react'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { TabSwitcher } from '@/components/ui'
 import { staggerContainer, fadeUp } from '@/lib/motion'
 
 function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  return createClient()
 }
 
 const LIFESTYLE_OPTIONS = ['Early bird', 'Night owl', 'Non-smoker', 'Pet owner', 'Remote work', 'Quiet', 'Social', 'Clean', 'Cook', 'Gym-goer']

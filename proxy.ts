@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const PROTECTED = ['/dashboard', '/messages', '/listings/new', '/swipe']
+  const PROTECTED = ['/dashboard', '/messages', '/listings/new', '/swipe', '/settings', '/roommates', '/sublets']
   const needsAuth = PROTECTED.some(p => pathname.startsWith(p))
 
   if (needsAuth && !user) {

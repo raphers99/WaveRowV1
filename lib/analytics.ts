@@ -70,12 +70,16 @@ export async function identifyUser(userId: string, traits?: EventProperties): Pr
       })
       amplitude.identify(id)
     }
-  } catch {}
+  } catch (e) {
+    if (IS_DEV) console.warn('[Analytics] Amplitude identify failed', e)
+  }
 
   try {
     const Sentry = await import('@sentry/browser')
     Sentry.setUser({ id: userId })
-  } catch {}
+  } catch (e) {
+    if (IS_DEV) console.warn('[Analytics] Sentry setUser failed', e)
+  }
 }
 
 export async function resetUser(): Promise<void> {
@@ -83,11 +87,15 @@ export async function resetUser(): Promise<void> {
   try {
     const amplitude = await import('@amplitude/analytics-browser')
     amplitude.reset()
-  } catch {}
+  } catch (e) {
+    if (IS_DEV) console.warn('[Analytics] Amplitude reset failed', e)
+  }
   try {
     const Sentry = await import('@sentry/browser')
     Sentry.setUser(null)
-  } catch {}
+  } catch (e) {
+    if (IS_DEV) console.warn('[Analytics] Sentry reset failed', e)
+  }
 }
 
 // ─── Core event tracker ──────────────────────────────────────────────────────
@@ -107,12 +115,12 @@ export function trackEvent(name: string, properties?: EventProperties): void {
   // Amplitude (async import won't block)
   import('@amplitude/analytics-browser')
     .then(amp => amp.track(name, props))
-    .catch(() => {})
+    .catch((e) => { if (IS_DEV) console.warn('[Analytics] Amplitude track failed', e) })
 
   // Sentry breadcrumb
   import('@sentry/browser')
     .then(S => S.addBreadcrumb({ message: name, data: props, level: 'info', category: 'user_action' }))
-    .catch(() => {})
+    .catch((e) => { if (IS_DEV) console.warn('[Analytics] Sentry breadcrumb failed', e) })
 
   // Supabase event log (best-effort, no await)
   _logToSupabase(name, props)
@@ -160,7 +168,7 @@ export function trackError(error: unknown, context?: EventProperties): void {
 
   import('@sentry/browser')
     .then(S => S.captureException(err, { extra: context }))
-    .catch(() => {})
+    .catch((e) => { if (IS_DEV) console.warn('[Analytics] Sentry capture failed', e) })
 }
 
 export function trackApiError(endpoint: string, statusCode: number | undefined, error: unknown): void {
@@ -172,7 +180,7 @@ export function trackApiError(endpoint: string, statusCode: number | undefined, 
       level: 'error',
       extra: { endpoint, statusCode, message },
     }))
-    .catch(() => {})
+    .catch((e) => { if (IS_DEV) console.warn('[Analytics] Sentry capture failed', e) })
 }
 
 // ─── Performance traces ──────────────────────────────────────────────────────
@@ -199,17 +207,14 @@ function _logToSupabase(eventName: string, metadata: EventProperties): void {
   const SKIP = new Set(['performance_trace', 'screen_view'])
   if (SKIP.has(eventName)) return
 
-  import('@supabase/ssr')
-    .then(({ createBrowserClient }) => {
-      const sb = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      )
+  import('@/lib/supabase/client')
+    .then(({ createClient }) => {
+      const sb = createClient()
       return sb.from('analytics_events').insert({
         user_id: _userId ?? null,
         event_name: eventName,
         metadata,
       })
     })
-    .catch(() => {}) // never surface analytics errors to the user
+    .catch((e) => { if (IS_DEV) console.warn('[Analytics] Supabase log failed', e) }) // never surface analytics errors to the user
 }
