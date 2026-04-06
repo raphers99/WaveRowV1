@@ -269,3 +269,9 @@ src/
 - ALWAYS null-check ref before initializing: `if (!mapRef.current) return`
 - Map init MUST live inside `useEffect`
 - Lazy load the map component with `dynamic(() => import(...), { ssr: false })`
+
+---
+
+## Security / CodeQL
+- If CodeQL flags `js/xss-through-dom` for image previews, ensure any value rendered into `<img src>` is protocol-validated.
+- Policy: allow `https:` for remote images and `blob:` for local `URL.createObjectURL(...)` previews; reject everything else (`javascript:`, `data:`, invalid URLs).

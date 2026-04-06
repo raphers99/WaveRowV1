@@ -18,6 +18,16 @@ function getSupabase() {
   return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 }
 
+function sanitizeImageSrc(raw: string): string | null {
+  try {
+    const u = new URL(raw)
+    if (u.protocol === 'https:' || u.protocol === 'blob:') return u.toString()
+    return null
+  } catch {
+    return null
+  }
+}
+
 export default function NewListingPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
@@ -135,6 +145,7 @@ export default function NewListingPage() {
   }
 
   const progress = ((step + 1) / STEPS.length) * 100
+  const safePhotoUrls = photoUrls.map(sanitizeImageSrc).filter((u): u is string => !!u)
 
   if (publishedId) {
     return (
@@ -332,9 +343,9 @@ export default function NewListingPage() {
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>Tap to add photos (optional but recommended)</span>
                   <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handlePhotoAdd(e.target.files)} />
                 </label>
-                {photoUrls.length > 0 && (
+                {safePhotoUrls.length > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {photoUrls.map((url, i) => (
+                    {safePhotoUrls.map((url, i) => (
                       <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 12, overflow: 'hidden' }}>
                         <img src={url} alt={`Photo ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <button
