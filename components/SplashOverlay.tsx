@@ -18,19 +18,28 @@ export function SplashOverlay() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    const initialLoader = document.getElementById('initial-loader')
     const isColdStart = !sessionStorage.getItem('splash_shown')
 
-    // Always dismiss the native splash — launchAutoHide:false means it waits
-    // for this call. On warm starts we still need to call it or app is stuck.
     hideNativeSplash()
 
     if (isColdStart) {
+      // Show the React-managed animated overlay, then hand off by removing
+      // the static pre-hydration div on the next frame (once overlay is painted).
       setVisible(true)
+      requestAnimationFrame(() => initialLoader?.remove())
       const timer = setTimeout(() => {
         setVisible(false)
         sessionStorage.setItem('splash_shown', '1')
       }, 2200)
       return () => clearTimeout(timer)
+    } else {
+      // Warm start: just fade out and remove the static loader quickly.
+      if (initialLoader) {
+        initialLoader.style.transition = 'opacity 0.25s ease'
+        initialLoader.style.opacity = '0'
+        setTimeout(() => initialLoader.remove(), 250)
+      }
     }
   }, [])
 

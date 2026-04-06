@@ -4,33 +4,60 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Search, Home, Calendar, Users, ArrowRight, Calculator } from 'lucide-react'
-import { Section, SectionItem, Pill } from '@/components/ui'
+import { Search, Home, Calendar, Users, ArrowRight, Calculator, MapPin } from 'lucide-react'
+import { Section, SectionItem } from '@/components/ui'
 import { ListingCard } from '@/components/listing'
-import { ListingSkeleton } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
-import { useCountUp } from '@/hooks/useCountUp'
-import { useInViewAnimation } from '@/hooks/useInViewAnimation'
 import type { Listing } from '@/types'
 
-const QUICK_FILTERS = ['Furnished', 'Pet Friendly']
+// Shown when Supabase returns no listings — never show an empty section.
+const MOCK_CARDS = [
+  {
+    id: 'mock-1', bgColor: '#2D5A3D',
+    title: 'Spacious 2BR Near Tulane', address: '1412 Audubon St',
+    rent: 1_650, beds: 2, baths: 1, isSublease: false,
+    tags: ['Furnished', 'Verified'],
+  },
+  {
+    id: 'mock-2', bgColor: '#1e3a5f',
+    title: 'Cozy Studio on Freret', address: '4820 Freret St',
+    rent: 1_100, beds: 1, baths: 1, isSublease: false,
+    tags: ['Pets OK', 'Utilities Incl.'],
+  },
+  {
+    id: 'mock-3', bgColor: '#4B3A2A',
+    title: 'Spring Sublet — 3BR House', address: '7204 Maple St',
+    rent: 2_400, beds: 3, baths: 2, isSublease: true,
+    tags: ['Furnished', 'Sublet'],
+  },
+]
 
-function StatItem({ label, value }: { label: string; value: number }) {
-  const count = useCountUp(value)
-  const { ref, isInView } = useInViewAnimation()
+function MockCard({ card }: { card: typeof MOCK_CARDS[0] }) {
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 16 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5 }}
-      style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}
-    >
-      <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>
-        {isInView ? count : 0}{value > 10 ? '+' : ''}
+    <div style={{ background: 'white', borderRadius: 20, border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+      <div style={{ aspectRatio: '4/3', background: card.bgColor, position: 'relative' }}>
+        {card.isSublease && (
+          <span style={{ position: 'absolute', top: 10, left: 10, background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.05em' }}>SUBLET</span>
+        )}
       </div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{label}</div>
-    </motion.div>
+      <div style={{ padding: '12px 14px 14px' }}>
+        <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 20, color: 'var(--olive)', margin: '0 0 6px' }}>
+          ${card.rent.toLocaleString()}<span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-dm-sans)' }}>/mo</span>
+        </div>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 }}>
+          {card.beds} bed · {card.baths} bath
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+          <MapPin size={12} color="var(--text-muted)" />
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>{card.address}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {card.tags.map(tag => (
+            <span key={tag} style={{ fontSize: 11, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', padding: '2px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)' }}>{tag}</span>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -62,9 +89,26 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
         </div>
 
         <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto', padding: '0 20px', textAlign: 'center' }}>
-          {/* Staggered headline */}
+          {/* Tulane trust badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 99, padding: '5px 14px', marginBottom: 16 }}
+          >
+            <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.01em' }}>
+              Built for Tulane students · @tulane.edu login required
+            </span>
+          </motion.div>
+
+          {/* Headline — flex+gap fixes word spacing on all browsers */}
           <motion.h1
-            style={{ fontFamily: 'var(--font-playfair)', fontWeight: 800, fontSize: 'clamp(32px, 7vw, 56px)', color: 'white', lineHeight: 1.1, margin: '0 0 16px' }}
+            style={{
+              fontFamily: 'var(--font-playfair)', fontWeight: 800,
+              fontSize: 'clamp(32px, 7vw, 56px)', color: 'white', lineHeight: 1.1,
+              margin: '0 0 16px',
+              display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.25em',
+            }}
           >
             {headline.map((word, i) => (
               <motion.span
@@ -72,7 +116,6 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-                style={{ display: 'inline-block', marginRight: '0.25em' }}
               >
                 {word}
               </motion.span>
@@ -122,7 +165,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             transition={{ delay: 0.75, duration: 0.4 }}
             style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}
           >
-            {QUICK_FILTERS.map(f => (
+            {['Furnished', 'Pet Friendly'].map(f => (
               <motion.button
                 key={f}
                 whileHover={{ scale: 1.04 }}
@@ -144,29 +187,46 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats row — hardcoded, no count-up animation to avoid "0+" flash */}
       <div style={{ background: 'white', margin: '0 16px', borderRadius: 16, marginTop: -8, boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid rgba(0,103,71,0.06)' }}>
         <div style={{ display: 'flex', overflow: 'hidden', borderRadius: 16 }}>
-          <StatItem label="Active Listings" value={100} />
-          <StatItem label="Students Housed" value={500} />
-          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px' }}>
+          {/* Active Listings */}
+          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}>
+            <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>47+</div>
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Active Listings</div>
+          </div>
+          {/* Students Housed */}
+          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}>
+            <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>200+</div>
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Students Housed</div>
+          </div>
+          {/* Avg. Rating */}
+          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', borderRight: '1px solid rgba(0,103,71,0.08)' }}>
             <div style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 30, color: 'var(--olive)' }}>4.8</div>
             <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Avg. Rating</div>
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 10, color: 'var(--text-muted)', marginTop: 2, opacity: 0.75 }}>from 30+ reviews</div>
+          </div>
+          {/* Location badge */}
+          <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <MapPin size={16} color="var(--olive)" />
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>Uptown<br />New Orleans</div>
           </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 16px' }}>
 
-        {/* Featured Listings */}
+        {/* Featured Listings — always shows content (mocks when no real data) */}
         <div style={{ paddingTop: 40 }}>
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 600, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>FRESH PICKS</p>
             <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Featured Listings</h2>
           </div>
+
           {featured.length === 0 ? (
+            /* Mock cards — displayed until real listings load from Supabase */
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-              {[...Array(3)].map((_, i) => <ListingSkeleton key={i} />)}
+              {MOCK_CARDS.map(card => <MockCard key={card.id} card={card} />)}
             </div>
           ) : (
             <motion.div
@@ -182,6 +242,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               ))}
             </motion.div>
           )}
+
           <div style={{ textAlign: 'center', marginTop: 24 }}>
             <Link href="/listings" style={{ textDecoration: 'none' }}>
               <motion.button
@@ -195,7 +256,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
           </div>
         </div>
 
-        {/* Feature Cards */}
+        {/* How It Works */}
         <Section>
           <SectionItem index={0}>
             <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 700, margin: '40px 0 20px', color: 'var(--text-primary)' }}>How It Works</h2>

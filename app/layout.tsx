@@ -40,6 +40,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} data-scroll-behavior="smooth">
       <body style={{ backgroundColor: 'var(--surface)', minHeight: '100dvh' }}>
+        {/* Pre-hydration loader — renders instantly before React mounts.
+            SplashOverlay removes this div once it mounts. */}
+        <div
+          id="initial-loader"
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            background: '#006747',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <p style={{
+            fontFamily: 'Georgia, "Times New Roman", serif',
+            fontWeight: 800,
+            fontSize: 36,
+            color: 'white',
+            margin: 0,
+            letterSpacing: '-0.01em',
+          }}>WaveRow</p>
+        </div>
         <SplashOverlay />
         <AnalyticsProvider />
         <AppShell>{children}</AppShell>
