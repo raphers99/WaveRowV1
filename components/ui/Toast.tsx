@@ -23,7 +23,7 @@ export const toast = {
   },
   subscribe(listener: (toasts: ToastState[]) => void) {
     listeners.add(listener)
-    return () => listeners.delete(listener)
+    return () => { listeners.delete(listener) }
   }
 }
 

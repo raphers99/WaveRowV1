@@ -77,7 +77,7 @@ export type ListingCardProps = { listing: Listing; onClick: (id: string) => void
 export type ListingImageProps = { src: string; alt: string }
 export type ListingMetaProps = { beds: number; baths: number; location: string }
 export type PriceTagProps = { price: number }
-export type SaveButtonProps = { isSaved: boolean; onToggle: (event: React.MouseEvent) => void }
+export type SaveButtonProps = { isSaved: boolean; onToggle: () => void }
 export type ListingGridProps = { listings: Listing[]; onCardClick: (id: string) => void; onSave: (id: string) => void; savedIds?: Set<string> }
 export type SwipeStackProps = { listings: Listing[]; onSwipe: (id: string, action: SwipeAction) => void }
 export type SwipeCardProps = { listing: Listing; onSwipe: (action: SwipeAction) => void }

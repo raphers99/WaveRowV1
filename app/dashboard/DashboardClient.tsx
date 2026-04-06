@@ -76,7 +76,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       ;(async () => {
         try {
           const { data } = await getSupabase().from('listings').select('id, user_id, title, type, address, rent, beds, baths, furnished, pets, utilities, photos, is_sublease').eq('user_id', userId).order('created_at', { ascending: false })
-          setMyListings(data ?? [])
+          setMyListings((data ?? []) as Listing[])
         } catch {}
         setLoadingMy(false)
       })()

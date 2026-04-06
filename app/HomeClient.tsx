@@ -298,7 +298,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               {featured.slice(0, 3).map((listing, i) => (
                 <motion.div key={listing.id} variants={fadeUp} custom={i}>
                   {isAuthenticated
-                    ? <ListingCard listing={listing} onClick={() => {}} onSave={() => {}} />
+                    ? <ListingCard listing={listing} isSaved={false} onClick={() => {}} onSave={() => {}} />
                     : <MaskedListingCard listing={listing} />}
                 </motion.div>
               ))}

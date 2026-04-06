@@ -9,9 +9,7 @@ import { SubletBadge } from './SubletBadge'
 import type { ListingCardProps } from '@/types'
 
 export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardProps) {
-  function handleSave(e: React.MouseEvent) {
-    e.preventDefault() // Prevent link navigation
-    e.stopPropagation()
+  function handleSave() {
     onSave(listing.id)
   }
 
