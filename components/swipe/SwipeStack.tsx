@@ -18,12 +18,14 @@ export function SwipeStack({ listings: initialListings, onSwipe }: SwipeStackPro
   useEffect(() => {
     if (index >= listings.length - 3) {
       fetchListings().then(more => {
-        const existingIds = new Set(listings.map(l => l.id))
-        const newOnes = more.filter(l => !existingIds.has(l.id))
-        if (newOnes.length > 0) setListings(prev => [...prev, ...newOnes])
+        setListings(prev => {
+          const existingIds = new Set(prev.map(l => l.id))
+          const newOnes = more.filter(l => !existingIds.has(l.id))
+          return newOnes.length > 0 ? [...prev, ...newOnes] : prev
+        })
       }).catch(() => {})
     }
-  }, [index, listings])
+  }, [index])
 
   function handleSwipe(action: SwipeAction) {
     if (index >= listings.length) return

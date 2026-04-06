@@ -1,8 +1,7 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SlidersHorizontal, Home, Zap } from 'lucide-react'
@@ -11,6 +10,7 @@ import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { staggerContainer, fadeUp } from '@/lib/motion'
 import { saveListing, unsaveListing } from '@/lib/api'
 import { createBrowserClient } from '@supabase/ssr'
+import { trackEvent } from '@/lib/analytics'
 import type { Listing } from '@/types'
 
 const TYPES = ['All', 'APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM']
@@ -19,13 +19,20 @@ const TYPE_LABELS: Record<string, string> = {
 }
 const SORTS = ['Newest', 'Price: Low', 'Price: High']
 
-export function ListingsClient({ initialListings }: { initialListings: Listing[] }) {
+export function ListingsClient({ initialListings, hasMore, loadingMore, onLoadMore }: { initialListings: Listing[]; hasMore?: boolean; loadingMore?: boolean; onLoadMore?: () => void }) {
   const searchParams = useSearchParams()
   const [activeType, setActiveType] = useState('All')
   const [activeSort, setActiveSort] = useState('Newest')
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [userId, setUserId] = useState<string | null>(null)
+
+  // Debounced search tracking — fires 600ms after user stops typing
+  useEffect(() => {
+    if (!search) return
+    const t = setTimeout(() => trackEvent('search_listings', { query: search, result_count: filtered.length, screen_name: 'browse' }), 600)
+    return () => clearTimeout(t)
+  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).auth.getSession().then(({ data }) => {
@@ -52,8 +59,15 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
   async function handleSave(id: string) {
     setSavedIds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) { next.delete(id); unsaveListing(userId ?? '', id).catch(() => {}) }
-      else { next.add(id); saveListing(userId ?? '', id).catch(() => {}) }
+      if (next.has(id)) {
+        next.delete(id)
+        unsaveListing(userId ?? '', id).catch(() => {})
+        trackEvent('unsave_listing', { listing_id: id, screen_name: 'browse' })
+      } else {
+        next.add(id)
+        saveListing(userId ?? '', id).catch(() => {})
+        trackEvent('save_listing', { listing_id: id, screen_name: 'browse' })
+      }
       return next
     })
   }
@@ -67,6 +81,8 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search listings..."
+          autoComplete="off"
+          autoCorrect="on"
           style={{ width: '100%', background: 'white', border: '1px solid rgba(0,103,71,0.12)', borderRadius: 12, padding: '10px 14px', fontFamily: 'var(--font-dm-sans)', fontSize: 15, outline: 'none', color: 'var(--text-primary)', boxSizing: 'border-box' }}
         />
         {/* Type pills */}
@@ -106,7 +122,7 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '20px 16px 0' }}>
         {/* Swipe discover banner */}
-        <a href="/swipe" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
+        <Link href="/swipe" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
           <motion.div
             whileTap={{ scale: 0.98 }}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, var(--olive), #004d35)', borderRadius: 14, padding: '12px 16px', cursor: 'pointer' }}
@@ -120,7 +136,7 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
             </div>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'white', background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '4px 10px' }}>Try it →</span>
           </motion.div>
-        </a>
+        </Link>
 
         <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
           {filtered.length} listing{filtered.length !== 1 ? 's' : ''}
@@ -149,6 +165,17 @@ export function ListingsClient({ initialListings }: { initialListings: Listing[]
                 onCardClick={() => {}}
                 onSave={handleSave}
               />
+              {hasMore && !search && activeType === 'All' && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
+                  <button
+                    onClick={onLoadMore}
+                    disabled={loadingMore}
+                    style={{ background: 'white', border: '1.5px solid rgba(0,103,71,0.2)', borderRadius: 12, padding: '12px 32px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: 'var(--olive)', cursor: loadingMore ? 'not-allowed' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}
+                  >
+                    {loadingMore ? 'Loading...' : 'Load more listings'}
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

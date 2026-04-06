@@ -1,8 +1,8 @@
 'use client'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Home, Search, Plus, Users, User } from 'lucide-react'
 import { NavItem } from './NavItem'
-import { NavIndicator } from './NavIndicator'
 
 const TABS = [
   { href: '/', icon: Home, label: 'Home', isPlus: false },
@@ -37,11 +37,15 @@ export function BottomNav() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', height: 64 }}>
         {TABS.map(tab => {
-          const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
+          const isActive = tab.href === '/'
+          ? pathname === '/'
+          : tab.href === '/listings'
+            ? pathname === '/listings' || (pathname.startsWith('/listings/') && pathname !== '/listings/new')
+            : pathname.startsWith(tab.href)
           const Icon = tab.icon
           if (tab.isPlus) {
             return (
-              <a key={tab.href} href={tab.href} onClick={triggerHaptic} style={{ textDecoration: 'none' }}>
+              <Link key={tab.href} href={tab.href} onClick={triggerHaptic} style={{ textDecoration: 'none', outline: 'none', WebkitTapHighlightColor: 'transparent' }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 14,
                   background: 'linear-gradient(145deg, var(--olive), var(--olive-dark))',
@@ -50,18 +54,17 @@ export function BottomNav() {
                 }}>
                   <Icon size={22} color="white" strokeWidth={2.5} />
                 </div>
-              </a>
+              </Link>
             )
           }
           return (
-            <div key={tab.href} style={{ position: 'relative' }} onClick={triggerHaptic}>
+            <div key={tab.href} onClick={triggerHaptic}>
               <NavItem
                 href={tab.href}
                 icon={<Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} color={isActive ? 'var(--olive)' : '#9ca3af'} />}
                 label={tab.label}
                 isActive={isActive}
               />
-              {isActive && <NavIndicator />}
             </div>
           )
         })}

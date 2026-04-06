@@ -7,7 +7,8 @@ import { createBrowserClient } from '@supabase/ssr'
 import { LogOut, Star, Edit2, Check, X, Settings, ChevronRight, Camera } from 'lucide-react'
 import { TabSwitcher, VerifiedBadge, VerificationBanner, VerificationModal } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
-import { fetchSavedListings, fetchListings } from '@/lib/api'
+import { fetchSavedListings } from '@/lib/api'
+import { trackEvent, resetUser } from '@/lib/analytics'
 import { fadeUp } from '@/lib/motion'
 import type { Profile, Listing } from '@/types'
 
@@ -71,9 +72,13 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
   useEffect(() => {
     if (activeTab === 'My Listings' && myListings.length === 0) {
       setLoadingMy(true)
-      fetchListings().then(all => {
-        setMyListings(all.filter(l => l.user_id === userId))
-      }).catch(() => {}).finally(() => setLoadingMy(false))
+      ;(async () => {
+        try {
+          const { data } = await getSupabase().from('listings').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+          setMyListings(data ?? [])
+        } catch {}
+        setLoadingMy(false)
+      })()
     }
     if (activeTab === 'Saved' && savedListings.length === 0) {
       setLoadingSaved(true)
@@ -85,12 +90,13 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       ;(async () => {
         try {
           const { data } = await supabase.from('reviews').select('*').eq('landlord_id', userId).order('created_at', { ascending: false })
-          if (data) {
-            const enriched = await Promise.all(data.map(async (r) => {
-              const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
-              return { ...r, author_name: p?.name ?? 'Anonymous' }
-            }))
-            setReviews(enriched)
+          if (data && data.length > 0) {
+            const authorIds = [...new Set(data.map(r => r.author_id))]
+            const { data: profiles } = await supabase.from('profiles').select('user_id, name').in('user_id', authorIds)
+            const nameMap = Object.fromEntries((profiles ?? []).map(p => [p.user_id, p.name]))
+            setReviews(data.map(r => ({ ...r, author_name: nameMap[r.author_id] ?? 'Anonymous' })))
+          } else {
+            setReviews([])
           }
         } catch {}
         setLoadingReviews(false)
@@ -102,6 +108,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     if (!nameVal.trim()) return
     setSavingProfile(true)
     await getSupabase().from('profiles').update({ name: nameVal.trim() }).eq('user_id', userId)
+    trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
     setSavingProfile(false)
     setEditingName(false)
   }
@@ -157,6 +164,8 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
   }
 
   async function handleSignOut() {
+    trackEvent('sign_out', { screen_name: 'profile' })
+    await resetUser()
     await getSupabase().auth.signOut()
     router.replace('/login')
   }

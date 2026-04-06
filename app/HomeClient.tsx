@@ -53,7 +53,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
   const headline = 'Student Housing, Done Right.'.split(' ')
 
   return (
-    <div style={{ minHeight: '100dvh' }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
       {/* Hero */}
       <div style={{ position: 'relative', background: 'linear-gradient(160deg, var(--olive) 0%, var(--olive-dark) 100%)', paddingTop: 'calc(72px + env(safe-area-inset-top))', paddingBottom: 64, overflow: 'hidden' }}>
         {/* Animated grid */}
@@ -108,6 +108,8 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="Search by neighborhood or address..."
+              autoComplete="off"
+              autoCorrect="on"
               style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', background: 'transparent', padding: '8px 12px' }}
             />
             <motion.button

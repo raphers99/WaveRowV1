@@ -1,30 +1,45 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { User } from 'lucide-react'
-import { Logo } from './Logo'
-import { useScrollTrigger } from '@/hooks/useScrollTrigger'
+import Image from 'next/image'
 
 export function Navbar() {
-  const scrolled = useScrollTrigger(80)
   const pathname = usePathname()
   const isHome = pathname === '/'
+  const [scrolled, setScrolled] = useState(false)
+
+  // Reset scroll state on every navigation, then re-attach listener
+  useEffect(() => {
+    setScrolled(window.scrollY > 80)
+    const onScroll = () => setScrolled(window.scrollY > 80)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [pathname])
 
   return (
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
       paddingTop: 'env(safe-area-inset-top)',
       height: 'calc(56px + env(safe-area-inset-top))',
-      background: scrolled ? 'rgba(255,255,255,0.88)' : 'transparent',
-      backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
-      WebkitBackdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
-      borderBottom: scrolled ? '1px solid rgba(0,103,71,0.08)' : 'none',
+      background: isHome && !scrolled ? 'transparent' : 'rgba(255,255,255,0.95)',
+      backdropFilter: isHome && !scrolled ? 'none' : 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: isHome && !scrolled ? 'none' : 'blur(20px) saturate(180%)',
+      borderBottom: isHome && !scrolled ? 'none' : '1px solid rgba(0,103,71,0.08)',
       transition: 'background 0.3s ease, backdrop-filter 0.3s ease',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 56 }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo size={28} color={isHome && !scrolled ? 'white' : 'var(--olive)'} />
+          <Image
+            src="/icon.png"
+            alt="WaveRow"
+            width={32}
+            height={32}
+            style={{ borderRadius: 8, display: 'block' }}
+            priority
+          />
         </Link>
         <Link href="/" style={{ textDecoration: 'none' }}>
           <span style={{

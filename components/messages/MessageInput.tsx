@@ -15,7 +15,7 @@ export function MessageInput({ onSend, disabled }: { onSend: (body: string) => v
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, padding: '12px 16px', background: 'white', borderTop: '1px solid rgba(0,103,71,0.08)' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', background: 'white', borderTop: '1px solid rgba(0,103,71,0.08)' }}>
       <input
         value={value}
         onChange={e => setValue(e.target.value)}
@@ -24,7 +24,7 @@ export function MessageInput({ onSend, disabled }: { onSend: (body: string) => v
         style={{
           flex: 1, background: 'rgba(0,103,71,0.05)', border: '1px solid rgba(0,103,71,0.1)',
           borderRadius: 20, padding: '10px 16px', fontSize: 15,
-          fontFamily: 'var(--font-dm-sans)', outline: 'none', color: 'var(--text-primary)',
+          fontFamily: 'var(--font-dm-sans)', outline: 'none', color: 'var(--text-primary)', WebkitTextFillColor: 'var(--text-primary)',
         }}
       />
       <motion.button

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createBrowserClient } from '@supabase/ssr'
@@ -28,8 +28,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
+  const emailRef = useRef<HTMLInputElement | null>(null)
+  const passwordRef = useRef<HTMLInputElement | null>(null)
+  const formRef = useRef<HTMLDivElement | null>(null)
 
   const isOtp = role === 'student' || role === 'subletter'
+
+  // Scroll focused input into view above keyboard
+  function handleInputFocus(e: React.FocusEvent<HTMLInputElement>) {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 320)
+  }
 
   // --- OTP flow (student / subletter) ---
   async function handleSendCode() {
@@ -63,7 +73,7 @@ export default function LoginPage() {
         verification_type: role,
       }, { onConflict: 'user_id' })
     }
-    window.location.href = '/listings'
+    router.replace('/listings')
   }
 
   // --- Password flow (landlord) ---
@@ -76,7 +86,7 @@ export default function LoginPage() {
       const { error: e } = await supabase.auth.signInWithPassword({ email, password })
       setLoading(false)
       if (e) { setError(e.message); return }
-      window.location.href = '/listings'
+      router.replace('/listings')
     } else {
       const { data, error: e } = await supabase.auth.signUp({ email, password, options: { data: { role: 'landlord' } } })
       setLoading(false)
@@ -91,7 +101,7 @@ export default function LoginPage() {
           verification_type: 'landlord',
         }, { onConflict: 'user_id' })
       }
-      window.location.href = '/listings'
+      router.replace('/listings')
     }
   }
 
@@ -135,9 +145,9 @@ export default function LoginPage() {
     : 'Send Code'
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--surface)', zIndex: 100 }}>
       {/* Hero */}
-      <div style={{ position: 'relative', background: 'linear-gradient(160deg, var(--olive) 0%, var(--olive-dark) 100%)', paddingTop: 'calc(72px + env(safe-area-inset-top))', paddingBottom: 48, overflow: 'hidden' }}>
+      <div style={{ position: 'relative', flexShrink: 0, background: 'linear-gradient(160deg, var(--olive) 0%, var(--olive-dark) 100%)', paddingTop: 'calc(52px + env(safe-area-inset-top))', paddingBottom: 28, overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, opacity: 0.06, pointerEvents: 'none' }}>
           <svg width="100%" height="200%" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -160,8 +170,8 @@ export default function LoginPage() {
         </motion.div>
       </div>
 
-      {/* Form */}
-      <div style={{ flex: 1, background: 'var(--surface)', padding: '24px 16px', maxWidth: 480, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      {/* Form — scrollable, takes all remaining space between hero and button */}
+      <div ref={formRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: 'var(--surface)', padding: '20px 16px 16px', width: '100%', boxSizing: 'border-box', maxWidth: 480, alignSelf: 'center' }}>
         <AnimatePresence mode="wait">
 
           {step === 'code' ? (
@@ -253,12 +263,18 @@ export default function LoginPage() {
 
                     <p className="label-style" style={{ marginBottom: 6 }}>Email</p>
                     <input
+                      ref={emailRef}
                       className="input"
-                      type="email"
+                      type="text"
+                      inputMode="email"
                       value={email}
                       onChange={e => { setEmail(e.target.value); setError('') }}
                       placeholder={role === 'landlord' ? 'you@email.com' : 'you@tulane.edu'}
-                      autoComplete="email"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      onFocus={handleInputFocus}
+                      onKeyDown={e => { if (e.key === 'Enter') { if (role === 'landlord') passwordRef.current?.focus(); else handleSubmit() } }}
                       style={{ marginBottom: role === 'landlord' ? 12 : 4 }}
                     />
 
@@ -266,12 +282,15 @@ export default function LoginPage() {
                       <>
                         <p className="label-style" style={{ marginBottom: 6 }}>Password</p>
                         <input
+                          ref={passwordRef}
                           className="input"
                           type="password"
                           value={password}
                           onChange={e => { setPassword(e.target.value); setError('') }}
                           placeholder="••••••••"
                           autoComplete={landlordTab === 'signin' ? 'current-password' : 'new-password'}
+                          onFocus={handleInputFocus}
+                          onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
                           style={{ marginBottom: 4 }}
                         />
                       </>
@@ -293,8 +312,8 @@ export default function LoginPage() {
         </AnimatePresence>
       </div>
 
-      {/* Sticky button */}
-      <div style={{ padding: '12px 16px 20px', background: 'rgba(242,242,247,0.95)', backdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)', position: 'sticky', bottom: 0, zIndex: 10 }}>
+      {/* Submit button — flexShrink:0 keeps it pinned at the bottom of our fixed container */}
+      <div style={{ flexShrink: 0, padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', background: 'rgba(250,250,248,0.98)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)' }}>
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={handleSubmit}

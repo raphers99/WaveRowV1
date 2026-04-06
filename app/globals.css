@@ -241,6 +241,8 @@ input, textarea, select {
   padding: 0.75rem 1rem;
   font-size: 1rem;
   color: var(--text-primary);
+  /* WebKit overrides `color` with its own fill — set both to guarantee visibility */
+  -webkit-text-fill-color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
   -webkit-appearance: none;

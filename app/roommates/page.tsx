@@ -69,25 +69,47 @@ export default function RoommatesPage() {
   async function loadData(uid: string) {
     setLoading(true)
     const supabase = getSupabase()
+
     const [profilesRes, groupsRes, myProfileRes] = await Promise.all([
-      supabase.from('roommate_profiles').select('*').order('created_at', { ascending: false }),
-      supabase.from('roommate_groups').select('*').order('created_at', { ascending: false }),
-      supabase.from('roommate_profiles').select('id').eq('user_id', uid).single(),
+      // Single query: join profiles table directly
+      supabase.from('roommate_profiles')
+        .select('*, profiles(name)')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      // Single query: join member counts and creator name
+      supabase.from('roommate_groups')
+        .select('*, profiles(name)')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase.from('roommate_profiles').select('id').eq('user_id', uid).maybeSingle(),
     ])
+
     if (myProfileRes.data) setHasProfile(true)
 
-    const enrichedProfiles = await Promise.all((profilesRes.data ?? []).map(async (p: RoommateProfile) => {
-      const { data: prof } = await supabase.from('profiles').select('name').eq('user_id', p.user_id).single()
-      return { ...p, name: prof?.name ?? 'Student' }
+    // Flatten joined profile name
+    const enrichedProfiles = (profilesRes.data ?? []).map((p: RoommateProfile & { profiles?: { name?: string } }) => ({
+      ...p,
+      name: p.profiles?.name ?? 'Student',
     }))
     setProfiles(enrichedProfiles)
 
-    const enrichedGroups = await Promise.all((groupsRes.data ?? []).map(async (g: RoommateGroup) => {
-      const [{ count }, { data: creator }] = await Promise.all([
-        supabase.from('roommate_group_members').select('*', { count: 'exact', head: true }).eq('group_id', g.id),
-        supabase.from('profiles').select('name').eq('user_id', g.created_by).single(),
-      ])
-      return { ...g, member_count: count ?? 1, creator_name: creator?.name ?? 'Someone' }
+    // For group member counts, one batched query instead of per-group
+    const groupIds = (groupsRes.data ?? []).map((g: RoommateGroup) => g.id)
+    const { data: memberCounts } = groupIds.length > 0
+      ? await supabase.from('roommate_group_members')
+          .select('group_id')
+          .in('group_id', groupIds)
+      : { data: [] }
+
+    const countMap: Record<string, number> = {}
+    for (const row of memberCounts ?? []) {
+      countMap[row.group_id] = (countMap[row.group_id] ?? 0) + 1
+    }
+
+    const enrichedGroups = (groupsRes.data ?? []).map((g: RoommateGroup & { profiles?: { name?: string } }) => ({
+      ...g,
+      member_count: countMap[g.id] ?? 1,
+      creator_name: g.profiles?.name ?? 'Someone',
     }))
     setGroups(enrichedGroups)
     setLoading(false)

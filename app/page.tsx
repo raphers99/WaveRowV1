@@ -1,19 +1,22 @@
-import { createClient } from '@/lib/supabase/server'
-import type { Listing } from '@/types'
-import { HomeClient } from './HomeClient'
+'use client'
 
-export default async function HomePage() {
-  const supabase = await createClient()
-  let featured: Listing[] = []
-  try {
-    const { data } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('status', 'ACTIVE')
-      .order('created_at', { ascending: false })
-      .limit(6)
-    featured = (data ?? []) as Listing[]
-  } catch {}
+import { useEffect, useState } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
+import { HomeClient } from './HomeClient'
+import type { Listing } from '@/types'
+
+export default function HomePage() {
+  const [featured, setFeatured] = useState<Listing[]>([])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data } = await createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+          .from('listings').select('*').eq('status', 'ACTIVE').order('created_at', { ascending: false }).limit(6)
+        setFeatured((data ?? []) as Listing[])
+      } catch {}
+    })()
+  }, [])
 
   return <HomeClient featured={featured} />
 }

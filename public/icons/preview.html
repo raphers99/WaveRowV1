@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WaveRow — App Icon Variations</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { background: #f0f0f0; font-family: -apple-system, sans-serif; padding: 40px 20px }
+  h1 { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #111 }
+  .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 48px }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; max-width: 900px; margin: 0 auto 60px }
+  .card { display: flex; flex-direction: column; align-items: center; gap: 12px }
+  .icon-wrap { position: relative; width: 160px; height: 160px }
+  .icon-wrap img {
+    width: 160px; height: 160px;
+    border-radius: 35px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.12);
+    display: block;
+  }
+  .label { font-size: 13px; font-weight: 600; color: #333; letter-spacing: 0.3px }
+  .desc { font-size: 11px; color: #888; text-align: center; max-width: 140px; line-height: 1.4 }
+
+  /* iOS home screen mockup */
+  .mockup-section { max-width: 900px; margin: 0 auto }
+  .mockup-section h2 { font-size: 18px; font-weight: 600; margin-bottom: 24px; color: #111; text-align: center }
+  .mockups { display: flex; gap: 40px; justify-content: center; flex-wrap: wrap }
+  .phone {
+    width: 220px; height: 440px; border-radius: 36px;
+    padding: 20px 14px 14px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25), inset 0 0 0 1.5px rgba(255,255,255,0.1);
+  }
+  .phone.light { background: #f2f2f7 }
+  .phone.dark  { background: #1c1c1e }
+  .phone-notch {
+    width: 80px; height: 22px; border-radius: 11px;
+    margin: 0 auto 16px;
+  }
+  .phone.light .phone-notch { background: #d1d1d6 }
+  .phone.dark  .phone-notch { background: #3a3a3c }
+  .phone-label {
+    text-align: center; font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    margin-bottom: 20px;
+  }
+  .phone.light .phone-label { color: #8e8e93 }
+  .phone.dark  .phone-label { color: #636366 }
+  .app-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap }
+  .app-icon {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    width: 58px;
+  }
+  .app-icon img { width: 52px; height: 52px; border-radius: 12px; display: block }
+  .app-icon span { font-size: 9px; font-weight: 500 }
+  .phone.light .app-icon span { color: #1c1c1e }
+  .phone.dark  .app-icon span { color: #f2f2f7 }
+
+  /* Placeholder app icons */
+  .placeholder {
+    width: 52px; height: 52px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+</style>
+</head>
+<body>
+
+<h1>WaveRow App Icon</h1>
+<p class="subtitle">6 variations · 1024×1024 · iOS App Store ready</p>
+
+<div class="grid">
+  <div class="card">
+    <img src="icon-flat.png" alt="Flat">
+    <div class="label">1. Minimal Flat</div>
+    <div class="desc">Solid #1C573C · Clean · High contrast</div>
+  </div>
+  <div class="card">
+    <img src="icon-gradient.png" alt="Gradient">
+    <div class="label">2. Premium Gradient</div>
+    <div class="desc">Subtle dark-to-light green · Depth</div>
+  </div>
+  <div class="card">
+    <img src="icon-glass.png" alt="Glass">
+    <div class="label">3. Glass / iOS Style</div>
+    <div class="desc">Frosted highlight · Soft reflection</div>
+  </div>
+  <div class="card">
+    <img src="icon-dark.png" alt="Dark">
+    <div class="label">4. Dark Mode</div>
+    <div class="desc">Near-black bg · Warm white logo</div>
+  </div>
+  <div class="card">
+    <img src="icon-inverted.png" alt="Inverted">
+    <div class="label">5. Inverted / Outline</div>
+    <div class="desc">Light bg · Green outline stroke</div>
+  </div>
+  <div class="card">
+    <img src="icon-bold.png" alt="Bold">
+    <div class="label">6. Bold</div>
+    <div class="desc">Thicker wave · Max legibility at small size</div>
+  </div>
+</div>
+
+<div class="mockup-section">
+  <h2>iOS Home Screen Preview</h2>
+  <div class="mockups">
+
+    <!-- Light mode -->
+    <div class="phone light">
+      <div class="phone-notch"></div>
+      <div class="phone-label">LIGHT MODE</div>
+      <div class="app-row">
+        <div class="app-icon">
+          <div class="placeholder" style="background:#007AFF">📱</div>
+          <span>Phone</span>
+        </div>
+        <div class="app-icon">
+          <img src="icon-flat.png" alt="WaveRow">
+          <span>WaveRow</span>
+        </div>
+        <div class="app-icon">
+          <div class="placeholder" style="background:#34C759">📩</div>
+          <span>Mail</span>
+        </div>
+      </div>
+      <br>
+      <div class="app-row">
+        <div class="app-icon">
+          <img src="icon-glass.png" alt="WaveRow Glass">
+          <span>WaveRow</span>
+        </div>
+        <div class="app-icon">
+          <div class="placeholder" style="background:#FF9500">🗺️</div>
+          <span>Maps</span>
+        </div>
+        <div class="app-icon">
+          <img src="icon-gradient.png" alt="WaveRow Gradient">
+          <span>WaveRow</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dark mode -->
+    <div class="phone dark">
+      <div class="phone-notch"></div>
+      <div class="phone-label">DARK MODE</div>
+      <div class="app-row">
+        <div class="app-icon">
+          <div class="placeholder" style="background:#0A84FF">📱</div>
+          <span>Phone</span>
+        </div>
+        <div class="app-icon">
+          <img src="icon-dark.png" alt="WaveRow Dark">
+          <span>WaveRow</span>
+        </div>
+        <div class="app-icon">
+          <div class="placeholder" style="background:#30D158">📩</div>
+          <span>Mail</span>
+        </div>
+      </div>
+      <br>
+      <div class="app-row">
+        <div class="app-icon">
+          <img src="icon-bold.png" alt="WaveRow Bold">
+          <span>WaveRow</span>
+        </div>
+        <div class="app-icon">
+          <div class="placeholder" style="background:#FF9F0A">🗺️</div>
+          <span>Maps</span>
+        </div>
+        <div class="app-icon">
+          <img src="icon-flat.png" alt="WaveRow">
+          <span>WaveRow</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
