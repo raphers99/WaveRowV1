@@ -9,13 +9,6 @@ const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 const CENTER = { lat: 29.9401, lng: -90.1201 }
 const ZOOM = 14
 
-const MAP_STYLES = [
-  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { elementType: 'geometry', stylers: [{ saturation: -30 }] },
-]
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function setPillDefault(el: HTMLElement) {
@@ -257,7 +250,6 @@ export default function MapClient() {
         disableDefaultUI: true,
         zoomControl: true,
         zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
-        styles: MAP_STYLES as google.maps.MapTypeStyle[],
       })
       geocoder.current = new google.maps.Geocoder()
       setMapReady(true)
@@ -339,7 +331,7 @@ export default function MapClient() {
         } else {
           await new Promise<void>((resolve) => {
             gc.geocode(
-              { address: `${listing.address}, New Orleans, LA` },
+              { address: listing.address },
               (results, status) => {
                 if (status === 'OK' && results?.[0]) {
                   addMarker(results[0].geometry.location.toJSON(), listing)
