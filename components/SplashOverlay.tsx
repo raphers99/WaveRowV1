@@ -24,21 +24,26 @@ export function SplashOverlay() {
     hideNativeSplash()
 
     if (isColdStart) {
-      // Show the React-managed animated overlay, then hand off by removing
-      // the static pre-hydration div on the next frame (once overlay is painted).
+      // Show the React-managed animated overlay, then hide the static
+      // pre-hydration div on the next frame (once overlay is painted).
+      // IMPORTANT: use display:none — never call .remove() on a node owned
+      // by React's tree. Removing it causes insertBefore/removeChild crashes
+      // on every subsequent navigation.
       setVisible(true)
-      requestAnimationFrame(() => initialLoader?.remove())
+      requestAnimationFrame(() => {
+        if (initialLoader) initialLoader.style.display = 'none'
+      })
       const timer = setTimeout(() => {
         setVisible(false)
         sessionStorage.setItem('splash_shown', '1')
       }, 2200)
       return () => clearTimeout(timer)
     } else {
-      // Warm start: just fade out and remove the static loader quickly.
+      // Warm start: fade out then hide. Never remove from DOM.
       if (initialLoader) {
         initialLoader.style.transition = 'opacity 0.25s ease'
         initialLoader.style.opacity = '0'
-        setTimeout(() => initialLoader.remove(), 250)
+        setTimeout(() => { initialLoader.style.display = 'none' }, 250)
       }
     }
   }, [])
