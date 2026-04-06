@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -76,13 +76,7 @@ export function ListingsClient({
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [userId, setUserId] = useState<string | null>(null)
-
-  // Debounced search tracking — fires 600ms after user stops typing
-  useEffect(() => {
-    if (!search) return
-    const t = setTimeout(() => trackEvent('search_listings', { query: search, result_count: filtered.length, screen_name: 'browse' }), 600)
-    return () => clearTimeout(t)
-  }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
+  const filteredResultCountRef = useRef(0)
 
   useEffect(() => {
     createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).auth.getSession().then(({ data }) => {
@@ -111,6 +105,36 @@ export function ListingsClient({
     else if (activeSort === 'Price: High') list.sort((a, b) => b.rent - a.rent)
     return list
   }, [sourceListings, activeType, activeSort, search])
+
+  filteredResultCountRef.current = filtered.length
+
+  // Debounced search tracking — fires 600ms after user stops typing. Ref holds latest filtered length so sort/type changes before the timer fires are reflected in result_count.
+  useEffect(() => {
+    if (!search) return
+    const t = setTimeout(() => {
+      const rc = filteredResultCountRef.current
+      // #region agent log
+      fetch('http://127.0.0.1:7941/ingest/afec164a-073a-4f26-99a4-54c2aecb885c', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '952fbb' },
+        body: JSON.stringify({
+          sessionId: '952fbb',
+          location: 'app/listings/ListingsClient.tsx:search_debounce',
+          message: 'search_listings fire',
+          data: { queryLen: search.length, result_count: rc },
+          timestamp: Date.now(),
+          hypothesisId: 'H2',
+        }),
+      }).catch(() => {})
+      // #endregion
+      trackEvent('search_listings', {
+        query: search,
+        result_count: rc,
+        screen_name: 'browse',
+      })
+    }, 600)
+    return () => clearTimeout(t)
+  }, [search])
 
   async function handleSave(id: string) {
     if (isMockData) return // don't attempt saves on mock data

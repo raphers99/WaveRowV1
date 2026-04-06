@@ -1,15 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { SwipeStack } from '@/components/swipe'
 import { ListingSkeleton } from '@/components/listing'
 import { fetchListings, swipeAction } from '@/lib/api'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import type { Listing, SwipeAction as SwipeActionType } from '@/types'
 
-function getSupabase() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+function loginUrl() {
+  return `/login/?next=${encodeURIComponent('/swipe/')}`
+}
+
+function redirectToLogin() {
+  if (typeof window !== 'undefined') window.location.assign(loginUrl())
 }
 
 export default function SwipePage() {
@@ -18,13 +21,60 @@ export default function SwipePage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    getSupabase().auth.getSession().then(({ data }) => {
-      setUserId(data.session?.user.id ?? null)
-    })
-    fetchListings()
-      .then(setListings)
-      .catch(() => setListings([]))
-      .finally(() => setLoading(false))
+    let cancelled = false
+    createClient()
+      .auth.getSession()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        // #region agent log
+        fetch('http://127.0.0.1:7941/ingest/afec164a-073a-4f26-99a4-54c2aecb885c', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '952fbb' },
+          body: JSON.stringify({
+            sessionId: '952fbb',
+            location: 'app/swipe/page.tsx:getSession',
+            message: 'swipe auth gate',
+            data: { hasSession: !!data.session, hasError: !!error },
+            timestamp: Date.now(),
+            hypothesisId: 'H1',
+            runId: 'singleton-hardnav',
+          }),
+        }).catch(() => {})
+        // #endregion
+        if (error || !data.session) {
+          setLoading(false)
+          redirectToLogin()
+          return
+        }
+        setUserId(data.session.user.id)
+        fetchListings()
+          .then(setListings)
+          .catch(() => setListings([]))
+          .finally(() => setLoading(false))
+      })
+      .catch(() => {
+        if (cancelled) return
+        // #region agent log
+        fetch('http://127.0.0.1:7941/ingest/afec164a-073a-4f26-99a4-54c2aecb885c', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '952fbb' },
+          body: JSON.stringify({
+            sessionId: '952fbb',
+            location: 'app/swipe/page.tsx:getSession',
+            message: 'getSession rejected',
+            data: {},
+            timestamp: Date.now(),
+            hypothesisId: 'H3',
+            runId: 'singleton-hardnav',
+          }),
+        }).catch(() => {})
+        // #endregion
+        setLoading(false)
+        redirectToLogin()
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   async function handleSwipe(id: string, action: SwipeActionType) {
