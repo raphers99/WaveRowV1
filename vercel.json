@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/listings/:id((?!new|placeholder)[^/]+)/",
+      "destination": "/listings/placeholder/"
+    }
+  ]
+}
