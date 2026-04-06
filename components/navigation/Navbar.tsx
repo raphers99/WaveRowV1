@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
 import { User, MessageCircle } from 'lucide-react'
 import Image from 'next/image'
 
@@ -49,17 +48,19 @@ export function Navbar() {
           }}>WaveRow</span>
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Link href="/messages">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: scrolled || !isHome ? 'rgba(0,103,71,0.08)' : 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Link href="/messages" style={{ borderRadius: '50%' }} className="nav-icon-link">
+            <div
+              style={{ width: 36, height: 36, borderRadius: '50%', background: scrolled || !isHome ? 'rgba(0,103,71,0.08)' : 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.15s ease' }}
+            >
               <MessageCircle size={18} color={isHome && !scrolled ? 'white' : 'var(--olive)'} />
-            </motion.div>
+            </div>
           </Link>
-          <Link href="/dashboard">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: scrolled || !isHome ? 'rgba(0,103,71,0.08)' : 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Link href="/dashboard" style={{ borderRadius: '50%' }} className="nav-icon-link">
+            <div
+              style={{ width: 36, height: 36, borderRadius: '50%', background: scrolled || !isHome ? 'rgba(0,103,71,0.08)' : 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'transform 0.15s ease' }}
+            >
               <User size={18} color={isHome && !scrolled ? 'white' : 'var(--olive)'} />
-            </motion.div>
+            </div>
           </Link>
         </div>
       </div>

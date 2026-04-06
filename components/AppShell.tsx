@@ -1,12 +1,15 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { AnimatePresence, motion } from 'framer-motion'
 import { Navbar } from './navigation/Navbar'
 import { BottomNav } from './navigation/BottomNav'
 import { usePageTracking } from '@/hooks/usePageTracking'
 
-const HIDE_CHROME = ['/login', '/listings/new']
+function hideChromeForPath(pathname: string) {
+  const login = pathname === '/login' || pathname === '/login/'
+  const newListing = pathname === '/listings/new' || pathname === '/listings/new/'
+  return login || newListing
+}
 
 function GlobalFooter() {
   return (
@@ -59,23 +62,15 @@ function GlobalFooter() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   usePageTracking()
-  const hideChrome = HIDE_CHROME.includes(pathname)
+  const hideChrome = hideChromeForPath(pathname)
   return (
     <>
       <Navbar />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-          style={{ minHeight: '100dvh' }}
-        >
-          {children}
-          {!hideChrome && <GlobalFooter />}
-        </motion.div>
-      </AnimatePresence>
+      {/* Plain wrapper: AnimatePresence + motion here caused hard crashes on static/Vercel builds (React 19 + framer-motion route transitions). */}
+      <div key={pathname} style={{ minHeight: '100dvh' }}>
+        {children}
+        {!hideChrome && <GlobalFooter />}
+      </div>
       {!hideChrome && <BottomNav />}
     </>
   )

@@ -1,8 +1,6 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { cardHover } from '@/lib/motion'
 import { ListingImage } from './ListingImage'
 import { PriceTag } from './PriceTag'
 import { ListingMeta } from './ListingMeta'
@@ -20,9 +18,16 @@ export function ListingCard({ listing, onClick, onSave }: ListingCardProps) {
 
   return (
     <Link href={`/listings/${listing.id}`} onClick={() => onClick(listing.id)} style={{ textDecoration: 'none', display: 'block' }}>
-      <motion.div
-        {...cardHover}
-        style={{ background: 'white', borderRadius: 20, border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'hidden' }}
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 20,
+          border: '1px solid rgba(0,103,71,0.08)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+        }}
+        className="listing-card-surface"
       >
         <div style={{ aspectRatio: '4/3', position: 'relative', overflow: 'hidden' }}>
           <ListingImage src={listing.photos[0]} alt={listing.title ?? listing.address} />
@@ -44,7 +49,7 @@ export function ListingCard({ listing, onClick, onSave }: ListingCardProps) {
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </Link>
   )
 }

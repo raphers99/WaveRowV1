@@ -3,13 +3,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Home, Zap, AlertTriangle } from 'lucide-react'
 import { Pill, Button } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
-import { staggerContainer } from '@/lib/motion'
 import { saveListing, unsaveListing } from '@/lib/api'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 import type { Listing } from '@/types'
 
@@ -79,7 +77,7 @@ export function ListingsClient({
   const filteredResultCountRef = useRef(0)
 
   useEffect(() => {
-    createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).auth.getSession().then(({ data }) => {
+    createClient().auth.getSession().then(({ data }) => {
       if (data.session) setUserId(data.session.user.id)
     })
   }, [])
@@ -113,20 +111,6 @@ export function ListingsClient({
     if (!search) return
     const t = setTimeout(() => {
       const rc = filteredResultCountRef.current
-      // #region agent log
-      fetch('http://127.0.0.1:7941/ingest/afec164a-073a-4f26-99a4-54c2aecb885c', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '952fbb' },
-        body: JSON.stringify({
-          sessionId: '952fbb',
-          location: 'app/listings/ListingsClient.tsx:search_debounce',
-          message: 'search_listings fire',
-          data: { queryLen: search.length, result_count: rc },
-          timestamp: Date.now(),
-          hypothesisId: 'H2',
-        }),
-      }).catch(() => {})
-      // #endregion
       trackEvent('search_listings', {
         query: search,
         result_count: rc,
@@ -169,15 +153,8 @@ export function ListingsClient({
         {/* Type pills */}
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, marginTop: 10, scrollSnapType: 'x mandatory' }}>
           {TYPES.map(t => (
-            <div key={t} style={{ position: 'relative', flexShrink: 0, scrollSnapAlign: 'start' }}>
+            <div key={t} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
               <Pill label={TYPE_LABELS[t]} active={activeType === t} onClick={() => setActiveType(t)} />
-              {activeType === t && (
-                <motion.div
-                  layoutId="typeIndicator"
-                  style={{ position: 'absolute', inset: 0, background: 'var(--olive)', borderRadius: 99, zIndex: -1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
             </div>
           ))}
         </div>
@@ -203,10 +180,9 @@ export function ListingsClient({
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '20px 16px 0' }}>
         {/* Swipe discover banner */}
-        <Link href="/swipe" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }}>
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, var(--olive), #004d35)', borderRadius: 14, padding: '12px 16px', cursor: 'pointer' }}
+        <Link href="/swipe" style={{ textDecoration: 'none', display: 'block', marginBottom: 16 }} className="discover-banner-link">
+          <div
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(135deg, var(--olive), #004d35)', borderRadius: 14, padding: '12px 16px', cursor: 'pointer', transition: 'transform 0.15s ease' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Zap size={18} color="white" fill="white" />
@@ -216,7 +192,7 @@ export function ListingsClient({
               </div>
             </div>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'white', background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: '4px 10px' }}>Try it →</span>
-          </motion.div>
+          </div>
         </Link>
 
         {/* Loading state */}
@@ -228,9 +204,7 @@ export function ListingsClient({
 
         {/* Error state */}
         {!loading && error && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             style={{ textAlign: 'center', padding: '64px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
           >
             <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -241,7 +215,7 @@ export function ListingsClient({
             </p>
             <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{error}</p>
             {onRetry && <Button label="Try Again" onClick={onRetry} variant="primary" />}
-          </motion.div>
+          </div>
         )}
 
         {/* Listings grid */}
@@ -256,42 +230,34 @@ export function ListingsClient({
               {isMockData ? '' : `${filtered.length} listing${filtered.length !== 1 ? 's' : ''}`}
             </p>
 
-            <AnimatePresence mode="wait">
-              {filtered.length === 0 ? (
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  style={{ textAlign: 'center', padding: '80px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
-                >
-                  <motion.div animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 3 }}>
-                    <Home size={48} color="var(--text-muted)" strokeWidth={1.5} />
-                  </motion.div>
-                  <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>No matches</h3>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>Try adjusting your filters.</p>
-                </motion.div>
-              ) : (
-                <motion.div key={`${activeType}-${activeSort}-${search}`}>
-                  <ListingGrid
-                    listings={filtered}
-                    onCardClick={() => {}}
-                    onSave={handleSave}
-                  />
-                  {hasMore && !search && activeType === 'All' && !isMockData && (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
-                      <button
-                        onClick={onLoadMore}
-                        disabled={loadingMore}
-                        style={{ background: 'white', border: '1.5px solid rgba(0,103,71,0.2)', borderRadius: 12, padding: '12px 32px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: 'var(--olive)', cursor: loadingMore ? 'not-allowed' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}
-                      >
-                        {loadingMore ? 'Loading...' : 'Load more listings'}
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {filtered.length === 0 ? (
+              <div
+                style={{ textAlign: 'center', padding: '80px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
+              >
+                <Home size={48} color="var(--text-muted)" strokeWidth={1.5} />
+                <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>No matches</h3>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0 }}>Try adjusting your filters.</p>
+              </div>
+            ) : (
+              <div>
+                <ListingGrid
+                  listings={filtered}
+                  onCardClick={() => {}}
+                  onSave={handleSave}
+                />
+                {hasMore && !search && activeType === 'All' && !isMockData && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 8px' }}>
+                    <button
+                      onClick={onLoadMore}
+                      disabled={loadingMore}
+                      style={{ background: 'white', border: '1.5px solid rgba(0,103,71,0.2)', borderRadius: 12, padding: '12px 32px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: 'var(--olive)', cursor: loadingMore ? 'not-allowed' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}
+                    >
+                      {loadingMore ? 'Loading...' : 'Load more listings'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

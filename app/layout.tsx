@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
-import { SpeedInsights } from '@vercel/speed-insights/next'
 import AppShell from '@/components/AppShell'
 import { AnalyticsProvider } from '@/components/AnalyticsProvider'
 import { SplashOverlay } from '@/components/SplashOverlay'
@@ -69,7 +68,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SplashOverlay />
         <AnalyticsProvider />
         <AppShell>{children}</AppShell>
-        <SpeedInsights />
       </body>
     </html>
   )

@@ -424,6 +424,29 @@ input, textarea, select {
   to { transform: rotate(360deg); }
 }
 
+/* ── Listing card hover (replaces framer-motion on grid) ─────────── */
+
+a:has(.listing-card-surface):hover .listing-card-surface {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 103, 71, 0.12);
+}
+
+.pill-tap:active {
+  transform: scale(0.97);
+}
+
+.discover-banner-link:active > div {
+  transform: scale(0.98);
+}
+
+.ui-btn-tap:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.nav-icon-link:active > div {
+  transform: scale(0.95);
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

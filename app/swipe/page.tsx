@@ -26,21 +26,6 @@ export default function SwipePage() {
       .auth.getSession()
       .then(({ data, error }) => {
         if (cancelled) return
-        // #region agent log
-        fetch('http://127.0.0.1:7941/ingest/afec164a-073a-4f26-99a4-54c2aecb885c', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '952fbb' },
-          body: JSON.stringify({
-            sessionId: '952fbb',
-            location: 'app/swipe/page.tsx:getSession',
-            message: 'swipe auth gate',
-            data: { hasSession: !!data.session, hasError: !!error },
-            timestamp: Date.now(),
-            hypothesisId: 'H1',
-            runId: 'singleton-hardnav',
-          }),
-        }).catch(() => {})
-        // #endregion
         if (error || !data.session) {
           setLoading(false)
           redirectToLogin()
@@ -54,21 +39,6 @@ export default function SwipePage() {
       })
       .catch(() => {
         if (cancelled) return
-        // #region agent log
-        fetch('http://127.0.0.1:7941/ingest/afec164a-073a-4f26-99a4-54c2aecb885c', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '952fbb' },
-          body: JSON.stringify({
-            sessionId: '952fbb',
-            location: 'app/swipe/page.tsx:getSession',
-            message: 'getSession rejected',
-            data: {},
-            timestamp: Date.now(),
-            hypothesisId: 'H3',
-            runId: 'singleton-hardnav',
-          }),
-        }).catch(() => {})
-        // #endregion
         setLoading(false)
         redirectToLogin()
       })

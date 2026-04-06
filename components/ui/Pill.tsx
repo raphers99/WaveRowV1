@@ -1,12 +1,10 @@
 'use client'
-import { motion } from 'framer-motion'
-import { scaleTap } from '@/lib/motion'
 import type { PillProps } from '@/types'
 
 export function Pill({ label, active, onClick }: PillProps) {
   return (
-    <motion.button
-      {...scaleTap}
+    <button
+      type="button"
       onClick={onClick}
       style={{
         padding: '6px 16px',
@@ -19,10 +17,11 @@ export function Pill({ label, active, onClick }: PillProps) {
         color: active ? 'white' : 'var(--text-secondary)',
         cursor: 'pointer',
         whiteSpace: 'nowrap',
-        transition: 'all 0.2s ease',
+        transition: 'transform 0.15s ease, background 0.2s ease, color 0.2s ease',
       }}
+      className="pill-tap"
     >
       {label}
-    </motion.button>
+    </button>
   )
 }

@@ -1,18 +1,16 @@
 'use client'
-import { motion } from 'framer-motion'
-import { scaleTap } from '@/lib/motion'
 import type { ButtonProps } from '@/types'
 
 export function Button({ label, onClick, variant, disabled }: ButtonProps) {
   return (
-    <motion.button
-      {...scaleTap}
-      transition={{ duration: 0.15 }}
+    <button
+      type="button"
+      className={`btn-${variant} ui-btn-tap`}
       onClick={onClick}
       disabled={disabled}
-      className={`btn-${variant}`}
+      style={{ transition: 'transform 0.15s ease, opacity 0.15s ease' }}
     >
       {label}
-    </motion.button>
+    </button>
   )
 }
