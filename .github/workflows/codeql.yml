@@ -1,5 +1,3 @@
-# CodeQL
-
 name: "CodeQL"
 
 on:
@@ -9,47 +7,31 @@ on:
     branches: [ main ]
 
 jobs:
-  init:
+  initialize:
     name: Initialize CodeQL
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Set up CodeQL
         uses: github/codeql-action/setup@v2
         with:
-          language: "javascript"
+          languages: "javascript"
+      - name: Auto-detect the build system
+        uses: github/codeql-action/autodetect@v2
 
-          # Disable incremental analysis
-          disable-incremental-analysis: true
-
-      - name: Build
-        run: npm install
-
-      - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          build-mode: ${{ matrix.build-mode }}
-          
-disable-incremental-analysis: true
-    
-  scan:
-    name: CodeQL Scan
+  analyze:
+    name: Analyze CodeQL
     runs-on: ubuntu-latest
-    needs: init
+    needs: initialize
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Setup CodeQL
-        uses: github/codeql-action/setup@v2
-        with:
-          languages: "javascript"
-
-      - name: Perform CodeQL analysis
+      - name: Run CodeQL
         uses: github/codeql-action/analyze@v2
         with:
-          category: "security"
-          output: results.sarif
-          upload: true
+          disable-incremental-analysis: true
+          build-mode: ${{ matrix.build-mode }}
+          output: codeql-results.sarif
