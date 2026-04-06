@@ -80,7 +80,7 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
       rating: reviewRating,
       body: reviewBody.trim(),
     })
-    const { data } = await supabase.from('profiles').select('name').eq('user_id', currentUserId).single()
+    const { data } = await supabase.from('profiles').select('name').eq('user_id', currentUserId).maybeSingle()
     setReviews(prev => [{ id: Date.now().toString(), author_id: currentUserId, rating: reviewRating, body: reviewBody.trim(), created_at: new Date().toISOString(), author_name: data?.name ?? 'You' }, ...prev])
     setReviewBody(''); setReviewRating(5); setShowReviewForm(false); setSubmittingReview(false)
   }

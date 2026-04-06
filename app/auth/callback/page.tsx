@@ -10,7 +10,7 @@ function AuthCallbackInner() {
 
   useEffect(() => {
     const code = searchParams.get('code')
-    const next = searchParams.get('next') ?? '/listings'
+    const next = searchParams.get('next') ?? '/dashboard'
     if (code) {
       createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
         .auth.exchangeCodeForSession(code)

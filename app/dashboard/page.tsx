@@ -13,10 +13,12 @@ function getSupabase() {
 
 export default function DashboardPage() {
   const router = useRouter()
-  // mounted guard — prevents setState after unmount (avoids insertBefore/removeChild
-  // errors when framer-motion exits the page while an async fetch is still in flight)
+  const [mounted, setMounted] = useState(false)
   const mountedRef = useRef(true)
   const [data, setData] = useState<{ profile: Profile | null; userId: string; email: string } | null>(null)
+
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
 
   useEffect(() => {
     mountedRef.current = true

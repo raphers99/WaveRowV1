@@ -114,7 +114,7 @@ export default function SettingsPage() {
       if (!session) { router.replace('/login'); return }
       setUserId(session.user.id)
       setEmail(session.user.email ?? '')
-      const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).single()
+      const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle()
       if (profile) {
         setName(profile.name ?? '')
         setRole(profile.role ?? 'student')
