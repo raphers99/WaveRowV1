@@ -93,9 +93,9 @@ export async function fetchMessages(conversationId: string): Promise<Message[]> 
   return (data ?? []) as Message[]
 }
 
-export async function sendMessage(senderId: string, receiverId: string, listingId: string, body: string): Promise<void> {
+export async function sendMessage(senderId: string, receiverId: string, conversationId: string, body: string): Promise<void> {
   const supabase = getClient()
-  const { error } = await supabase.from('messages').insert({ sender_id: senderId, receiver_id: receiverId, listing_id: listingId, body, read: false })
+  const { error } = await supabase.from('messages').insert({ sender_id: senderId, receiver_id: receiverId, conversation_id: conversationId, body, read: false })
   if (error) throw error
 }
 
@@ -105,7 +105,7 @@ export async function startConversation(participantOne: string, participantTwo: 
     .from('conversations')
     .select('*')
     .eq('listing_id', listingId)
-    .or(`participant_one.eq.${participantOne},participant_two.eq.${participantOne}`)
+    .or(`and(participant_one.eq.${participantOne},participant_two.eq.${participantTwo}),and(participant_one.eq.${participantTwo},participant_two.eq.${participantOne})`)
     .single()
   if (existing) return existing as Conversation
   const { data, error } = await supabase

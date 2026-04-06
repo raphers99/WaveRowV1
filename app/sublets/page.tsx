@@ -1,13 +1,22 @@
-import { createClient } from '@/lib/supabase/server'
-import type { Listing } from '@/types'
-import { SubletClient } from './SubletClient'
+'use client'
 
-export default async function SubletsPage() {
-  const supabase = await createClient()
-  let listings: Listing[] = []
-  try {
-    const { data } = await supabase.from('listings').select('*').eq('is_sublease', true).eq('status', 'ACTIVE').order('created_at', { ascending: false })
-    listings = (data ?? []) as Listing[]
-  } catch {}
+import { useEffect, useState } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
+import { SubletClient } from './SubletClient'
+import type { Listing } from '@/types'
+
+export default function SubletsPage() {
+  const [listings, setListings] = useState<Listing[]>([])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const { data } = await createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+          .from('listings').select('*').eq('is_sublease', true).eq('status', 'ACTIVE').order('created_at', { ascending: false }).limit(100)
+        setListings((data ?? []) as Listing[])
+      } catch {}
+    })()
+  }, [])
+
   return <SubletClient initialListings={listings} />
 }

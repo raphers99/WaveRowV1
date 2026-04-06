@@ -44,12 +44,13 @@ export function ListingDetail({ listing }: { listing: Listing }) {
       if (session.session) setCurrentUserId(session.session.user.id)
       try {
         const { data } = await supabase.from('reviews').select('*').eq('landlord_id', listing.user_id).order('created_at', { ascending: false })
-        if (data) {
-          const enriched = await Promise.all(data.map(async (r) => {
-            const { data: p } = await supabase.from('profiles').select('name').eq('user_id', r.author_id).single()
-            return { ...r, author_name: p?.name ?? 'Anonymous' }
-          }))
-          setReviews(enriched)
+        if (data && data.length > 0) {
+          const authorIds = [...new Set(data.map(r => r.author_id))]
+          const { data: authorProfiles } = await supabase.from('profiles').select('user_id, name').in('user_id', authorIds)
+          const nameMap = Object.fromEntries((authorProfiles ?? []).map(p => [p.user_id, p.name]))
+          setReviews(data.map(r => ({ ...r, author_name: nameMap[r.author_id] ?? 'Anonymous' })))
+        } else if (data) {
+          setReviews([])
         }
       } catch {}
     })()

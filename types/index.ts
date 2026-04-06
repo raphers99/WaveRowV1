@@ -32,6 +32,7 @@ export type Conversation = {
 
 export type Message = {
   id: string; sender_id: string; receiver_id: string; listing_id: string | null;
+  conversation_id: string | null;
   body: string; read: boolean; created_at: string;
 }
 

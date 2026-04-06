@@ -6,6 +6,7 @@ import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { fetchMessages, sendMessage } from '@/lib/api'
 import { createBrowserClient } from '@supabase/ssr'
+import { trackEvent } from '@/lib/analytics'
 import type { Message } from '@/types'
 
 export function MessageThread({ conversationId, userId, otherUserId }: { conversationId: string; userId: string; otherUserId: string }) {
@@ -27,7 +28,7 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: `listing_id=eq.${conversationId}`
+        filter: `conversation_id=eq.${conversationId}`
       }, (payload) => {
         const newMsg = payload.new as Message
         setMessages(m => {
@@ -48,12 +49,14 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
       id: `tmp-${Date.now()}`,
       sender_id: userId,
       receiver_id: otherUserId,
-      listing_id: conversationId,
+      listing_id: null,
+      conversation_id: conversationId,
       body,
       read: false,
       created_at: new Date().toISOString(),
     }
     setMessages(m => [...m, optimistic])
+    trackEvent('send_message', { conversation_id: conversationId, screen_name: 'messages' })
     await sendMessage(userId, otherUserId, conversationId, body).catch(() => {})
   }
 
