@@ -44,7 +44,6 @@ export default function RoommatesPage() {
   const [moveIn, setMoveIn] = useState('')
   const [lifestyle, setLifestyle] = useState<string[]>([])
   const [bio, setBio] = useState('')
-  const [neighborhood, setNeighborhood] = useState('')
   const [major, setMajor] = useState('')
   const [saving, setSaving] = useState(false)
   const [createMode, setCreateMode] = useState<'profile' | 'group' | null>(null)
@@ -54,7 +53,6 @@ export default function RoommatesPage() {
   const [groupBudgetMin, setGroupBudgetMin] = useState('')
   const [groupBudgetMax, setGroupBudgetMax] = useState('')
   const [groupMoveIn, setGroupMoveIn] = useState('')
-  const [groupNeighborhood, setGroupNeighborhood] = useState('')
   const [groupDesc, setGroupDesc] = useState('')
 
   useEffect(() => {
@@ -127,7 +125,7 @@ export default function RoommatesPage() {
       lifestyle,
       cleanliness: 3,
       bio: bio || null,
-      neighborhood: neighborhood || null,
+      neighborhood: null,
       major: major || null,
       verified: false,
     }, { onConflict: 'user_id' })
@@ -149,7 +147,7 @@ export default function RoommatesPage() {
       budget_max: Number(groupBudgetMax),
       lifestyle,
       description: groupDesc || null,
-      neighborhood: groupNeighborhood || null,
+      neighborhood: null,
       move_in_date: groupMoveIn,
       verified: false,
     }).select().single()
@@ -205,7 +203,7 @@ export default function RoommatesPage() {
                         {new Date(p.move_in_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       </span>
                     </div>
-                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '0 0 6px' }}>${p.budget_min}–${p.budget_max}/mo{p.neighborhood ? ` · ${p.neighborhood}` : ''}</p>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '0 0 6px' }}>${p.budget_min}–${p.budget_max}/mo</p>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       {p.lifestyle.slice(0, 3).map(t => (
                         <span key={t} style={{ background: 'rgba(65,182,230,0.1)', color: '#2563eb', fontSize: 11, fontWeight: 500, padding: '3px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)' }}>{t}</span>
@@ -235,7 +233,7 @@ export default function RoommatesPage() {
                 <motion.div key={g.id} variants={fadeUp} custom={i} className="card" style={{ padding: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                     <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', margin: 0 }}>
-                      {g.neighborhood ? `${g.neighborhood} group` : `${g.total_size}-person group`}
+                      {`${g.total_size}-person group`}
                     </h3>
                     <span style={{ background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)', flexShrink: 0, marginLeft: 8 }}>
                       {g.member_count}/{g.total_size} members
@@ -306,8 +304,6 @@ export default function RoommatesPage() {
                   </div>
                   <p className="label-style" style={{ marginBottom: 4 }}>Move-in Date</p>
                   <input className="input" type="date" value={moveIn} onChange={e => setMoveIn(e.target.value)} style={{ marginBottom: 12 }} />
-                  <p className="label-style" style={{ marginBottom: 4 }}>Neighborhood (optional)</p>
-                  <input className="input" placeholder="Uptown, Garden District..." value={neighborhood} onChange={e => setNeighborhood(e.target.value)} style={{ marginBottom: 12 }} />
                   <p className="label-style" style={{ marginBottom: 4 }}>Major (optional)</p>
                   <input className="input" placeholder="Business, Pre-med..." value={major} onChange={e => setMajor(e.target.value)} style={{ marginBottom: 12 }} />
                   <p className="label-style" style={{ marginBottom: 8 }}>Lifestyle</p>
@@ -343,8 +339,6 @@ export default function RoommatesPage() {
                   </div>
                   <p className="label-style" style={{ marginBottom: 4 }}>Move-in Date</p>
                   <input className="input" type="date" value={groupMoveIn} onChange={e => setGroupMoveIn(e.target.value)} style={{ marginBottom: 12 }} />
-                  <p className="label-style" style={{ marginBottom: 4 }}>Neighborhood (optional)</p>
-                  <input className="input" placeholder="Uptown, Garden District..." value={groupNeighborhood} onChange={e => setGroupNeighborhood(e.target.value)} style={{ marginBottom: 12 }} />
                   <p className="label-style" style={{ marginBottom: 4 }}>Description (optional)</p>
                   <textarea className="input" rows={2} placeholder="Tell others about your group..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} style={{ marginBottom: 16, resize: 'none' }} />
                   <button onClick={handleCreateGroup} disabled={saving || !groupBudgetMin || !groupBudgetMax || !groupMoveIn}

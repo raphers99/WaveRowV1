@@ -13,14 +13,7 @@ import { useCountUp } from '@/hooks/useCountUp'
 import { useInViewAnimation } from '@/hooks/useInViewAnimation'
 import type { Listing } from '@/types'
 
-const NEIGHBORHOODS = [
-  { name: 'Uptown', color: 'var(--olive)', count: 24 },
-  { name: 'Carrollton', color: 'var(--sky)', count: 18 },
-  { name: 'Garden District', color: '#6B4F2A', count: 15 },
-  { name: 'Mid-City', color: '#2D5A3D', count: 12 },
-]
-
-const QUICK_FILTERS = ['Uptown', 'Carrollton', 'Garden District', 'Mid-City', 'Furnished', 'Pet Friendly']
+const QUICK_FILTERS = ['Furnished', 'Pet Friendly']
 
 function StatItem({ label, value }: { label: string; value: number }) {
   const count = useCountUp(value)
@@ -107,7 +100,7 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Search by neighborhood or address..."
+              placeholder="Search by address..."
               autoComplete="off"
               autoCorrect="on"
               style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', background: 'transparent', padding: '8px 12px' }}
@@ -154,7 +147,6 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
       {/* Stats */}
       <div style={{ background: 'white', margin: '0 16px', borderRadius: 16, marginTop: -8, boxShadow: '0 2px 16px rgba(0,0,0,0.06)', border: '1px solid rgba(0,103,71,0.06)' }}>
         <div style={{ display: 'flex', overflow: 'hidden', borderRadius: 16 }}>
-          <StatItem label="Neighborhoods" value={4} />
           <StatItem label="Active Listings" value={100} />
           <StatItem label="Students Housed" value={500} />
           <div style={{ textAlign: 'center', flex: 1, padding: '20px 12px' }}>
@@ -202,42 +194,6 @@ export function HomeClient({ featured }: { featured: Listing[] }) {
             </Link>
           </div>
         </div>
-
-        {/* Browse by Neighborhood */}
-        <Section>
-          <SectionItem index={0}>
-            <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 600, color: 'var(--olive)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, marginTop: 40 }}>EXPLORE</p>
-            <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 700, margin: '0 0 20px', color: 'var(--text-primary)' }}>Browse by Neighborhood</h2>
-          </SectionItem>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-            {NEIGHBORHOODS.map((n, i) => (
-              <SectionItem key={n.name} index={i + 1}>
-                <Link href={`/listings?neighborhood=${encodeURIComponent(n.name)}`} style={{ textDecoration: 'none' }}>
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    style={{ background: n.color, borderRadius: 16, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 16, position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-                  >
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                      <div>
-                        <p style={{ fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: 16, color: 'white', margin: 0 }}>{n.name}</p>
-                      </div>
-                      <motion.span
-                        initial={{ scale: 0.6 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: i * 0.1 + 0.2, type: 'spring' }}
-                        style={{ background: 'rgba(255,255,255,0.2)', color: 'white', fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)' }}
-                      >
-                        {n.count} listings
-                      </motion.span>
-                    </div>
-                  </motion.div>
-                </Link>
-              </SectionItem>
-            ))}
-          </div>
-        </Section>
 
         {/* Feature Cards */}
         <Section>

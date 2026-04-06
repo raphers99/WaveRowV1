@@ -5,13 +5,6 @@ import { motion } from 'framer-motion'
 import { DollarSign, Calculator, Info } from 'lucide-react'
 import { fadeUp } from '@/lib/motion'
 
-const NEIGHBORHOODS = [
-  { name: 'Mid-City', studio: 900, shared: 650, oneBed: 1100, twoBed: 1350 },
-  { name: 'Carrollton', studio: 1050, shared: 700, oneBed: 1200, twoBed: 1500 },
-  { name: 'Uptown', studio: 1200, shared: 800, oneBed: 1450, twoBed: 1800 },
-  { name: 'Freret', studio: 1100, shared: 750, oneBed: 1300, twoBed: 1600 },
-  { name: 'Garden District', studio: 1400, shared: 950, oneBed: 1800, twoBed: 2200 },
-]
 
 function fmt(n: number) {
   return '$' + n.toLocaleString()
@@ -132,45 +125,9 @@ export default function ToolsPage() {
               {leftover < 0 && (
                 <div style={{ display: 'flex', gap: 8, background: 'rgba(239,68,68,0.08)', borderRadius: 10, padding: '10px 12px', marginTop: 8 }}>
                   <Info size={15} color="#ef4444" style={{ flexShrink: 0, marginTop: 1 }} />
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#ef4444', margin: 0 }}>Your expenses exceed your income. Consider shared housing or a lower-rent neighborhood.</p>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#ef4444', margin: 0 }}>Your expenses exceed your income. Consider shared housing to lower your costs.</p>
                 </div>
               )}
-            </div>
-
-            {/* Neighborhood comparison */}
-            <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-              <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', margin: '0 0 16px' }}>Can you afford it?</h2>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-dm-sans)', fontSize: 13 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '6px 0', color: 'var(--text-muted)', fontWeight: 600, paddingRight: 12 }}>Area</th>
-                      <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>Shared</th>
-                      <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>Studio</th>
-                      <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>1BR</th>
-                      <th style={{ textAlign: 'right', padding: '6px 0 6px 8px', color: 'var(--text-muted)', fontWeight: 600 }}>2BR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {NEIGHBORHOODS.map((n, i) => (
-                      <tr key={n.name} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.05)' }}>
-                        <td style={{ padding: '10px 12px 10px 0', fontWeight: 600, color: 'var(--text-primary)' }}>{n.name}</td>
-                        {[n.shared, n.studio, n.oneBed, n.twoBed].map((rent, j) => {
-                          const ok = rent <= maxRent
-                          return (
-                            <td key={j} style={{ textAlign: 'right', padding: '10px 8px', color: ok ? 'var(--olive)' : '#ef4444', fontWeight: ok ? 600 : 500 }}>
-                              {fmt(rent)}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', marginTop: 10, marginBottom: 0 }}>
-                <span style={{ color: 'var(--olive)', fontWeight: 600 }}>Green</span> = within your budget · <span style={{ color: '#ef4444', fontWeight: 600 }}>Red</span> = over budget
-              </p>
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>

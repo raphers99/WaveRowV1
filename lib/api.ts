@@ -10,7 +10,6 @@ function getClient() {
 
 export type ListingFilters = {
   type?: string
-  neighborhood?: string
   sort?: 'newest' | 'price_asc' | 'price_desc'
   search?: string
   is_sublease?: boolean
@@ -20,7 +19,6 @@ export async function fetchListings(filters?: ListingFilters): Promise<Listing[]
   const supabase = getClient()
   let query = supabase.from('listings').select('*').eq('status', 'ACTIVE')
   if (filters?.type && filters.type !== 'all') query = query.eq('type', filters.type)
-  if (filters?.neighborhood) query = query.eq('neighborhood', filters.neighborhood)
   if (filters?.is_sublease) query = query.eq('is_sublease', true)
   if (filters?.search) query = query.or(`address.ilike.%${filters.search}%,neighborhood.ilike.%${filters.search}%,title.ilike.%${filters.search}%`)
   if (filters?.sort === 'price_asc') query = query.order('rent', { ascending: true })

@@ -35,7 +35,7 @@ export function ListingCard({ listing, onClick, onSave }: ListingCardProps) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
             <PriceTag price={listing.rent} />
           </div>
-          <ListingMeta beds={listing.beds} baths={listing.baths} location={listing.neighborhood ?? listing.address} />
+          <ListingMeta beds={listing.beds} baths={listing.baths} location={listing.address} />
           {(listing.furnished || listing.pets || listing.utilities) && (
             <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
               {listing.furnished && <span style={{ fontSize: 11, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', padding: '2px 8px', borderRadius: 99 }}>Furnished</span>}

@@ -153,7 +153,7 @@ export function ListingDetail({ listing }: { listing: Listing }) {
             {listing.sqft && <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)' }}><Square size={16} />{listing.sqft.toLocaleString()} sqft</span>}
           </div>
           <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 20px' }}>
-            <MapPin size={14} />{listing.address}{listing.neighborhood && `, ${listing.neighborhood}`}
+            <MapPin size={14} />{listing.address}
           </p>
 
           {/* Description */}

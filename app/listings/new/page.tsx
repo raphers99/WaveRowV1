@@ -11,7 +11,6 @@ import type { Listing } from '@/types'
 
 const TYPES = ['APARTMENT', 'HOUSE', 'STUDIO', 'SHARED_ROOM']
 const TYPE_LABELS: Record<string, string> = { APARTMENT: 'Apartment', HOUSE: 'House', STUDIO: 'Studio', SHARED_ROOM: 'Room' }
-const NEIGHBORHOODS = ['Uptown', 'Carrollton', 'Garden District', 'Mid-City', 'Freret', 'Other']
 const AMENITIES = ['Furnished', 'Parking', 'Washer/Dryer', 'AC', 'Pet Friendly', 'Gym', 'Pool', 'Dishwasher', 'Utilities Included']
 const STEPS = ['Type', 'Details', 'Location', 'Amenities', 'Photos']
 
@@ -32,7 +31,7 @@ export default function NewListingPage() {
     type: '',
     beds: 1, baths: 1, sqft: '', rent: '', deposit: '',
     available_from: '', available_to: '', status: 'ACTIVE',
-    address: '', neighborhood: '', description: '',
+    address: '', description: '',
     furnished: false, pets: false, utilities: false, is_sublease: false,
     amenities: [] as string[],
     original_lease_end: '', move_out_date: '', reason: '', semester: '',
@@ -56,7 +55,7 @@ export default function NewListingPage() {
   function canProceed() {
     if (step === 0) return !!form.type
     if (step === 1) return !!form.rent && form.beds > 0 && form.baths > 0
-    if (step === 2) return !!form.address && !!form.neighborhood
+    if (step === 2) return !!form.address
     if (step === 4) return true
     return true
   }
@@ -100,7 +99,7 @@ export default function NewListingPage() {
           rent: Number(form.rent),
           deposit: form.deposit ? Number(form.deposit) : null,
           address: form.address,
-          neighborhood: form.neighborhood,
+          neighborhood: null,
           description: form.description || null,
           furnished: form.furnished,
           pets: form.pets,
@@ -265,13 +264,6 @@ export default function NewListingPage() {
                 <div>
                   <p className="label-style">Address</p>
                   <input className="input" value={form.address} onChange={e => update('address', e.target.value)} placeholder="123 Main St" />
-                </div>
-                <div>
-                  <p className="label-style">Neighborhood</p>
-                  <select className="input" value={form.neighborhood} onChange={e => update('neighborhood', e.target.value)} style={{ appearance: 'none' }}>
-                    <option value="">Select neighborhood</option>
-                    {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
                 </div>
                 <div>
                   <p className="label-style">Description</p>

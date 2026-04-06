@@ -47,7 +47,6 @@ export function ListingsClient({ initialListings, hasMore, loadingMore, onLoadMo
       const q = search.toLowerCase()
       list = list.filter(l =>
         l.address.toLowerCase().includes(q) ||
-        (l.neighborhood ?? '').toLowerCase().includes(q) ||
         (l.title ?? '').toLowerCase().includes(q)
       )
     }
