@@ -39,7 +39,7 @@ export function MessagesContent() {
   return (
     <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: activeId ? 0 : 'calc(64px + env(safe-area-inset-bottom))', height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ width: active ? '0' : '100%', maxWidth: 360, overflowY: 'auto', borderRight: '0.5px solid rgba(0,103,71,0.08)', display: 'flex', flexDirection: 'column', transition: 'width 0.2s' }}>
+        <div style={{ width: active ? '0' : '100%', overflowY: 'auto', borderRight: active ? '0.5px solid rgba(0,103,71,0.08)' : 'none', display: 'flex', flexDirection: 'column', transition: 'width 0.2s' }}>
           <div style={{ padding: '16px 16px 8px' }}>
             <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Messages</h1>
           </div>
