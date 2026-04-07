@@ -53,7 +53,7 @@ export function MessagesContent() {
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, color: 'var(--text-primary)', margin: '0 0 8px' }}>No messages yet</p>
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 24px', lineHeight: 1.6 }}>Contact a landlord from any listing to start a conversation.</p>
               <motion.a
-                href="/listings"
+                href="/"
                 whileTap={{ scale: 0.97 }}
                 style={{ background: 'var(--olive)', color: 'white', borderRadius: 12, padding: '11px 24px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}
               >

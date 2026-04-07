@@ -126,19 +126,25 @@ src/
 - Replace with trust badge: "100% Verified Tulane Users · @tulane.edu login required"
 
 ### Featured Listings
-- Enlarge listing cards — make them the visual centerpiece
-- Always render minimum 3 cards — use hardcoded mock data as fallback only
-- Never render an empty listings section
+- Full listing grid inlined into the home page — no separate /listings browse route
+- Full scroll, no pagination gate (load more button appears at bottom)
+- Mock fallback (3 cards) when Supabase returns 0 results — never an empty section
+- UX paradigm: filter-centric, not search-centric
 
-### Search Bar
-- Must be functional — connects to /listings/ with query param
-- If full search not yet implemented, route to /listings/?q= and filter client-side
-- Never render a non-functional search bar
+### Search Bar — REMOVED
+- No search bar anywhere on the home page or hero section
+- Discovery is driven entirely by the 3 hero filter pills
+
+### Filter Pills (sole discovery mechanism)
+- Pills: Furnished | Pet Friendly | Sublets — rendered in the hero section
+- Clicking a pill filters the inline listing grid by field (furnished / pets / is_sublease)
+- Clicking an active pill deactivates it (shows all listings)
+- Page smooth-scrolls to the listing grid on pill selection
 
 ### Hero Section
 - Headline: "Student Housing, Done Right."
-- Subhead: "Bridging the gap between students and landlords."
-- Trust badge: "100% Verified Tulane Users · @tulane.edu login required"
+- Subhead: "Verified apartments, sublets, and roommates — built for students."
+- Trust badge: "Built for students · @tulane.edu login required"
 
 ### How It Works Section
 - Keep the 01/02/03 steps layout
@@ -172,11 +178,29 @@ src/
 
 ---
 
+## Navigation
+
+### Bottom Nav (BottomNav.tsx)
+- Tabs (left to right): Home | Map | **Plus (+)** | Roommates | Messages
+- Plus button: dead center, `position: absolute; left: 50%; transform: translateX(-50%)`
+- No "Browse" tab — /listings browse is merged into the home page
+- No "Profile" tab — profile accessible via top-right header icon
+- Profile and Browse were removed; the 5-tab layout is: 2 left | center plus | 2 right
+
+### Header (Navbar.tsx)
+- Left: WaveRow logo icon + "WaveRow" brand text (both link to /)
+- Right: Messages icon → /messages | Profile (User) icon → /dashboard
+- Profile icon is always top-right of the header, not in bottom nav
+- On home page before scroll: transparent background, white icons
+- On scroll or other pages: frosted glass with olive icons
+
+---
+
 ## Map Feature
 
 - Map tab in main nav
 - Google Maps JavaScript API + Geocoding API (key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
-- Custom pill-shaped price markers — white bg, dark green text, inverted on hover/select
+- Custom pill-shaped price markers — `$Xk` format (e.g. $950, $1.4k, $2k) — white bg, dark green text, inverted on hover/select
 - Custom OverlayView popup card (not native InfoWindow) — title, price, beds/baths, View Listing CTA
 - One popup open at a time
 - Clusters for close markers

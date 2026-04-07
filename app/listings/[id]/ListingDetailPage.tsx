@@ -101,7 +101,7 @@ export function ListingDetailPage() {
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 24px', lineHeight: 1.6 }}>
             This listing could not be found. It may have been removed or the link is incorrect.
           </p>
-          <Link href="/listings" style={{ display: 'inline-block', background: 'var(--olive)', color: 'white', textDecoration: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15 }}>
+          <Link href="/" style={{ display: 'inline-block', background: 'var(--olive)', color: 'white', textDecoration: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15 }}>
             Browse All Listings
           </Link>
         </div>

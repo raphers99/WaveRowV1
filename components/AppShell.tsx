@@ -34,7 +34,7 @@ function GlobalFooter() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', marginBottom: 32 }}>
           {[
             { label: 'About', href: '/' },
-            { label: 'Listings', href: '/listings' },
+            { label: 'Listings', href: '/' },
             { label: 'Messages', href: '/messages' },
             { label: 'Privacy Policy', href: '/privacy' },
             { label: 'Terms of Service', href: '/terms' },

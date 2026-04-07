@@ -294,7 +294,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
                   {[1, 2].map(i => <ListingSkeleton key={i} />)}
                 </div>
               ) : savedListings.length === 0 ? (
-                <EmptyState message="No saved listings yet" cta="Browse Listings" onClick={() => router.push('/listings')} />
+                <EmptyState message="No saved listings yet" cta="Browse Listings" onClick={() => router.push('/')} />
               ) : (
                 <ListingGrid listings={savedListings} onCardClick={() => {}} onSave={() => {}} />
               )

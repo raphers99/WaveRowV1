@@ -12,6 +12,14 @@ const ZOOM = 14
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+function formatPriceShort(rent: number): string {
+  if (rent >= 1000) {
+    const k = rent / 1000
+    return `$${k % 1 === 0 ? k : parseFloat(k.toFixed(1))}k`
+  }
+  return `$${rent}`
+}
+
 function setPillDefault(el: HTMLElement) {
   el.style.cssText = [
     'background:#fff',
@@ -295,7 +303,7 @@ export default function MapClient() {
 
     function addMarker(position: google.maps.LatLngLiteral, listing: Listing) {
       const pill = document.createElement('div')
-      pill.textContent = `$${listing.rent.toLocaleString()}/mo`
+      pill.textContent = formatPriceShort(listing.rent)
       setPillDefault(pill)
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
