@@ -111,25 +111,16 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setSavingProfile(true)
     try {
       const supabase = getSupabase()
-      // Ensure the client has an active auth session so RLS auth.uid() matches
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         toast.show('Session expired — please sign in again', 'error')
         return
       }
-      console.log('[handleSaveName] Saving name:', nameVal.trim(), 'for user:', userId, 'session uid:', session.user.id)
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({ name: nameVal.trim() })
         .eq('user_id', session.user.id)
-        .select()
-      console.log('[handleSaveName] Response:', { error, data })
       if (error) throw error
-      if (!data || data.length === 0) {
-        console.warn('[handleSaveName] Update returned no rows — RLS may be blocking the write')
-        toast.show('Name save failed: could not update profile', 'error')
-        return
-      }
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
       toast.show('Name saved', 'success')
       setEditingName(false)
