@@ -7,7 +7,7 @@ import { toast } from '@/components/ui'
 import type { Listing } from '@/types'
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-const CENTER = { lat: 29.9401, lng: -90.1201 }
+const CENTER = { lat: 29.9311, lng: -90.1175 }
 const ZOOM = 14
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -22,26 +22,25 @@ function formatPriceShort(rent: number): string {
 
 function setPillDefault(el: HTMLElement) {
   el.style.cssText = [
-    'background:#fff',
-    'color:#1A3A2A',
+    'background:#006747',
+    'color:#fff',
     'font-family:var(--font-dm-sans),DM Sans,system-ui,sans-serif',
-    'font-weight:600',
+    'font-weight:700',
     'font-size:13px',
     'padding:5px 10px',
     'border-radius:20px',
-    'box-shadow:0 2px 8px rgba(0,0,0,0.18)',
+    'box-shadow:0 2px 8px rgba(0,0,0,0.22)',
     'cursor:pointer',
     'white-space:nowrap',
-    'transition:transform 0.15s ease,background 0.15s ease,color 0.15s ease',
+    'transition:transform 0.15s ease,box-shadow 0.15s ease',
     'transform:scale(1)',
     'user-select:none',
   ].join(';')
 }
 
 function setPillActive(el: HTMLElement) {
-  el.style.background = '#1A3A2A'
-  el.style.color = '#fff'
-  el.style.transform = 'scale(1.1)'
+  el.style.boxShadow = '0 4px 16px rgba(0,103,71,0.45)'
+  el.style.transform = 'scale(1.12)'
 }
 
 // Build the ListingPopup class lazily so it never evaluates on the server

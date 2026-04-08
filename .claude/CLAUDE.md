@@ -25,11 +25,11 @@
 
 ## Stack
 
-- Next.js 15 (App Router, Server Components by default)
+- Next.js 16.2.0 (App Router, `'use client'` only when interactivity required)
 - TypeScript (strict mode, zero `any`)
 - Tailwind CSS v4 (no inline styles)
 - Supabase (DB, Auth, Realtime, Storage)
-- React Native / Expo (mobile, bundle: com.waverow.app)
+- Capacitor (iOS wrapper — not Expo/RN; web changes apply after `npx cap sync ios`)
 - framer-motion (minimal), lucide-react, date-fns, clsx
 
 ---
@@ -40,7 +40,9 @@
 - Client components mutate via `lib/supabase/client.ts`
 - All DB types from `types/index.ts` only — never infer manually
 - Client components only when interactivity is required
-
+- Filters must be controlled via URL search params (single source of truth)
+- Server components read params and fetch filtered data
+- No client-side filtering of full dataset
 ## File Structure
 
 src/
@@ -67,6 +69,24 @@ src/
 - OTP handler: `/auth/callback`
 - Protected routes (redirect if no session): `/create`, `/dashboard`, `/messages`
 
+## Access Control
+
+- Listings are NOT publicly viewable
+- All listing data requires authenticated session
+
+### Unauthenticated Users
+- Can only see hero section
+- Cannot see listings, map, filters, or messages
+- Show CTA: "Log in with your student email to continue"
+
+### Enforcement
+- Middleware must protect:
+  - /listings
+  - /messages
+  - /create
+  - /map
+- Redirect unauthenticated users → /login
+- After login → redirect back to intended route
 ---
 
 ## Database Tables
@@ -118,97 +138,92 @@ src/
 
 ---
 
-## Homepage Rules
+## Homepage
 
-### Stats Section — REMOVED
-- Do not show any stats row (47+, 200+, 4.8 rating, etc.)
-- These were placeholder/fake values — remove entirely
-- Replace with trust badge: "100% Verified Tulane Users · @tulane.edu login required"
-
-### Featured Listings
-- Full listing grid inlined into the home page — no separate /listings browse route
-- Full scroll, no pagination gate (load more button appears at bottom)
-- Mock fallback (3 cards) when Supabase returns 0 results — never an empty section
-- UX paradigm: filter-centric, not search-centric
-
-### Search Bar — REMOVED
-- No search bar anywhere on the home page or hero section
-- Discovery is driven entirely by the 3 hero filter pills
-
-### Filter Pills (sole discovery mechanism)
-- Pills: Furnished | Pet Friendly | Sublets — rendered in the hero section
-- Clicking a pill filters the inline listing grid by field (furnished / pets / is_sublease)
-- Clicking an active pill deactivates it (shows all listings)
-- Page smooth-scrolls to the listing grid on pill selection
+### Core Rules
+- No dead UI elements
+- No placeholder components
+- Every interaction must result in navigation or state change
 
 ### Hero Section
 - Headline: "Student Housing, Done Right."
 - Subhead: "Verified apartments, sublets, and roommates — built for students."
 - Trust badge: "Built for students · @tulane.edu login required"
 
-### How It Works Section
-- Keep the 01/02/03 steps layout
-- Fix copy: Step 1 must say OTP/email — not "Google sign-in supported" (Google auth is not implemented)
-- Step 2: Browse verified Uptown properties
-- Step 3: Message the landlord directly through WaveRow
+### Auth Behavior
+- If NOT logged in:
+  - Show hero only
+  - Hide listings, filters, and map
+- If logged in:
+  - Show full listings + filters
 
-### Create Listing (+ Button)
-- Must be fully wired — clicking navigates authenticated users to /create
-- If user is not logged in, redirect to /login first then back to /create
-- Never render a non-functional + button
+### Listings Grid
+- Fully integrated into homepage
+- Clicking a listing MUST route to `/listings/[id]`
+- NEVER allow non-clickable cards
 
-### Footer / Disclosures
-- Add a proper footer with:
-  - WaveRow logo + slogan
-  - Links: About, Listings, Contact, Privacy Policy, Terms of Service
-  - Disclosure text: "WaveRow is a student housing marketplace. WaveRow does not own, manage, or guarantee any listed properties. Users are responsible for verifying listing accuracy. WaveRow is not a licensed real estate broker."
-  - Copyright: "© 2025 WaveRow. All rights reserved."
+### Listing States
+- Loading: skeleton cards
+- Empty: show CTA ("No listings found — adjust filters")
+- Error: retry button
 
----
+### Filters (Primary Discovery System)
+- Must use URL search params
 
-## Messages Feature
+#### Required Filters
+- price_min
+- price_max
+- beds
+- baths
+- furnished
+- pets
+- sublet
+- available_from
 
-- Full messaging tab in main nav
-- Route: /messages
-- Allows student-to-landlord and student-to-student communication
-- Powered by Supabase Realtime on `messages` table
-- UI: conversation list on left, message thread on right (mobile: full screen each)
-- Protected route — must be logged in
-- RLS: sender/receiver only
+### Query Rules
+- Filters MUST be applied server-side
+- NEVER fetch full listings table
+- ALWAYS use `.limit()`
 
----
-
-## Navigation
-
-### Bottom Nav (BottomNav.tsx)
-- Tabs (left to right): Home | Map | **Plus (+)** | Roommates | Messages
-- Plus button: dead center, `position: absolute; left: 50%; transform: translateX(-50%)`
-- No "Browse" tab — /listings browse is merged into the home page
-- No "Profile" tab — profile accessible via top-right header icon
-- Profile and Browse were removed; the 5-tab layout is: 2 left | center plus | 2 right
-
-### Header (Navbar.tsx)
-- Left: WaveRow logo icon + "WaveRow" brand text (both link to /)
-- Right: Messages icon → /messages | Profile (User) icon → /dashboard
-- Profile icon is always top-right of the header, not in bottom nav
-- On home page before scroll: transparent background, white icons
-- On scroll or other pages: frosted glass with olive icons
+### UI Rules
+- Remove all decorative/vibe-based icons
+- Remove any non-functional UI elements
 
 ---
 
 ## Map Feature
 
-- Map tab in main nav
-- Google Maps JavaScript API + Geocoding API (key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
-- Custom pill-shaped price markers — `$Xk` format (e.g. $950, $1.4k, $2k) — white bg, dark green text, inverted on hover/select
-- Custom OverlayView popup card (not native InfoWindow) — title, price, beds/baths, View Listing CTA
+- Must display real listings from Supabase
+- NO static or mock data
+
+### Fetching
+- Use bounding box only:
+  - minLat, maxLat, minLng, maxLng
+- NEVER fetch all listings
+
+### Markers
+- Custom OverlayView ONLY
+- Style:
+  - Background: #006747
+  - Text: white
+  - Format: $950, $1.2k
+
+### Behavior
 - One popup open at a time
-- Clusters for close markers
-- POI labels hidden, transit hidden, reduced saturation
-- Opens centered on Uptown at zoom 14
-- Bounding box fetch only — NEVER fetch all listings
-- Debounce map movement 300-500ms
+- Popup includes:
+  - title
+  - price
+  - beds/baths
+  - View Listing CTA → /listings/[id]
+
+### Performance
+- Debounce map movement: 400ms
 - Lazy load map component
+- Disable SSR
+
+### Constraints
+- Map must reflect real-time listings
+- Broken or empty map is not acceptable
 
 ---
 
@@ -269,7 +284,39 @@ src/
 6. Create listing flow
 7. Mobile sync
 ### Schema Relationships & Logic
-- **Messaging:** `messages` table must have `conversation_id` (UUID) to group threads. Logic: `SELECT * FROM messages WHERE sender_id = auth.uid() OR receiver_id = auth.uid()`.
+## Messages Feature (E2EE REQUIRED)
+
+- Route: /messages
+- Protected route
+
+### Core Requirement
+- All messages MUST use End-to-End Encryption (E2EE)
+
+### Encryption Rules
+- Encrypt message BEFORE inserting into database
+- Decrypt message AFTER fetching on client
+- Database must NEVER store plaintext messages
+
+### Implementation
+- Use Web Crypto API:
+  - crypto.subtle.generateKey
+  - crypto.subtle.encrypt
+  - crypto.subtle.decrypt
+
+### Database Fields
+- encrypted_content (string)
+- iv (initialization vector)
+- conversation_id
+
+### UI
+- Conversation list + message thread
+- Mobile: full screen thread
+
+### RLS
+- sender and receiver only
+
+### Performance
+- Optimistic UI required
 - **Mapping:** Use `st_asgeojson` or simple lat/long columns. Map bounds must be passed as `minLat, maxLat, minLng, maxLng` to the Supabase RPC function to ensure "Bounding Box" fetching only.
 - **Profiles:** Every `auth.users` entry must have a corresponding `profiles` row (trigger-based).
 ### State Management Policy
@@ -309,3 +356,53 @@ src/
 ## Security / CodeQL
 - If CodeQL flags `js/xss-through-dom` for image previews, ensure any value rendered into `<img src>` is protocol-validated.
 - Policy: allow `https:` for remote images and `blob:` for local `URL.createObjectURL(...)` previews; reject everything else (`javascript:`, `data:`, invalid URLs).
+## Listings Detail Page
+
+### Route
+- /listings/[id]
+
+### Requirements
+- Server-side fetch using listing ID
+- Display:
+  - price
+  - beds / baths
+  - description
+  - images
+  - landlord info
+
+### Actions
+- Message landlord
+- Save listing
+
+### States
+- Loading: skeleton
+- Error: retry UI
+- Missing listing: fallback message
+
+- NEVER render blank page
+## Stability Rules
+
+- No blank pages under any condition
+- No infinite loading states
+
+### Required States (ALL pages)
+- Loading (skeleton)
+- Error (retry button)
+- Empty (CTA)
+
+### Supabase Failures
+- Must show fallback UI
+- Must NOT crash app
+## UX Enforcement Rules
+
+- Every button MUST:
+  - Navigate OR mutate state
+
+- Forbidden:
+  - Dead buttons
+  - Placeholder UI
+  - Fake data
+  - Non-clickable cards
+
+- If interaction does nothing → it must be removed
+- Login is REQUIRED before accessing listings, map, and messaging

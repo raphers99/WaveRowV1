@@ -37,7 +37,7 @@ export function BottomNav() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, position: 'relative' }}>
         {/* Left tabs */}
-        <div style={{ display: 'flex', flex: 1, justifyContent: 'flex-start' }}>
+        <div style={{ display: 'flex', flex: 1, justifyContent: 'space-evenly' }}>
           {TABS.filter(tab => !tab.isPlus).slice(0, 2).map(tab => {
             const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
             const Icon = tab.icon
@@ -72,7 +72,7 @@ export function BottomNav() {
           })}
         </div>
         {/* Right tabs */}
-        <div style={{ display: 'flex', flex: 1, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', flex: 1, justifyContent: 'space-evenly' }}>
           {TABS.filter(tab => !tab.isPlus).slice(2).map(tab => {
             const isActive = pathname.startsWith(tab.href)
             const Icon = tab.icon
