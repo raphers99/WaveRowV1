@@ -50,7 +50,6 @@ function FilterBar() {
       key={label}
       onClick={() => router.push(buildUrl(searchParams, changes), { scroll: false })}
       style={{
-        flexShrink: 0,
         padding: '6px 14px',
         borderRadius: 99,
         fontSize: 13,
@@ -89,32 +88,25 @@ function FilterBar() {
   const anyFilterActive = furnished || pets || sublet || !!beds || !!priceMax
 
   return (
-    <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
-      <div style={{ display: 'flex', gap: 8, minWidth: 'max-content', padding: '0 2px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Row 1: Type filters + sort */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {anyFilterActive && pill('Clear all', false, {
           furnished: null, pets: null, sublet: null, beds: null, price_max: null,
         })}
         {pill('Furnished', furnished, { furnished: furnished ? null : 'true' })}
         {pill('Pets OK', pets, { pets: pets ? null : 'true' })}
         {pill('Sublets', sublet, { sublet: sublet ? null : 'true' })}
-        <div style={{ width: 1, background: 'rgba(0,103,71,0.12)', margin: '0 2px', flexShrink: 0 }} />
-        {BEDS.map(b => pill(
-          b.label,
-          beds === b.val,
-          { beds: b.val },
-        ))}
-        <div style={{ width: 1, background: 'rgba(0,103,71,0.12)', margin: '0 2px', flexShrink: 0 }} />
-        {PRICE_MAX.map(p => pill(
-          p.label,
-          priceMax === p.val,
-          { price_max: p.val },
-        ))}
-        <div style={{ width: 1, background: 'rgba(0,103,71,0.12)', margin: '0 2px', flexShrink: 0 }} />
         {SORTS.map(s => pill(
           s.label,
           sort === s.val,
           { sort: s.val === 'newest' ? null : s.val },
         ))}
+      </div>
+      {/* Row 2: Beds + price */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {BEDS.map(b => pill(b.label, beds === b.val, { beds: b.val }))}
+        {PRICE_MAX.map(p => pill(p.label, priceMax === p.val, { price_max: p.val }))}
       </div>
     </div>
   )
