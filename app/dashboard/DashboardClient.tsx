@@ -110,16 +110,25 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     if (!nameVal.trim()) return
     setSavingProfile(true)
     try {
-      const { error } = await getSupabase()
+      console.log('[handleSaveName] Saving name:', nameVal.trim(), 'for user:', userId)
+      const { error, data, count, status, statusText } = await getSupabase()
         .from('profiles')
         .update({ name: nameVal.trim() })
         .eq('user_id', userId)
+        .select()
+      console.log('[handleSaveName] Response:', { error, data, count, status, statusText })
       if (error) throw error
+      if (!data || data.length === 0) {
+        console.warn('[handleSaveName] Update returned no rows — RLS may be blocking the write')
+        toast.show('Name save failed: no rows updated (check RLS)', 'error')
+        return
+      }
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
       toast.show('Name saved', 'success')
       setEditingName(false)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
+      console.error('[handleSaveName] Error:', err)
       toast.show(`Name save failed: ${msg}`, 'error')
     } finally {
       setSavingProfile(false)
