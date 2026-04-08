@@ -249,7 +249,6 @@ export default function MapClient() {
 
     const map = mapInstance.current
     const Marker = PillMarkerClass.current
-    const geocoder = new google.maps.Geocoder()
 
     function onActivate(marker: PillMarkerInstance) {
       if (activeMarker.current && activeMarker.current !== marker) {
@@ -265,24 +264,14 @@ export default function MapClient() {
       m.setMap(map)
     }
 
-    async function placeAll() {
-      for (const listing of listings) {
-        if (listing.lat && listing.lng) {
-          addMarker({ lat: listing.lat, lng: listing.lng }, listing)
-        } else {
-          await new Promise<void>((resolve) => {
-            geocoder.geocode({ address: listing.address }, (results, status) => {
-              if (status === 'OK' && results?.[0]) {
-                addMarker(results[0].geometry.location.toJSON(), listing)
-              }
-              resolve()
-            })
-          })
-        }
+    // Only place listings that already have coordinates.
+    // Listings without lat/lng are skipped — the Geocoding API is not enabled.
+    for (const listing of listings) {
+      if (listing.lat && listing.lng) {
+        addMarker({ lat: listing.lat, lng: listing.lng }, listing)
       }
     }
 
-    placeAll()
     map.addListener('click', closeActive)
 
     return () => { closeActive() }

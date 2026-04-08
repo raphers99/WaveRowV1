@@ -110,17 +110,24 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     if (!nameVal.trim()) return
     setSavingProfile(true)
     try {
-      console.log('[handleSaveName] Saving name:', nameVal.trim(), 'for user:', userId)
-      const { error, data, count, status, statusText } = await getSupabase()
+      const supabase = getSupabase()
+      // Ensure the client has an active auth session so RLS auth.uid() matches
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.show('Session expired — please sign in again', 'error')
+        return
+      }
+      console.log('[handleSaveName] Saving name:', nameVal.trim(), 'for user:', userId, 'session uid:', session.user.id)
+      const { error, data } = await supabase
         .from('profiles')
         .update({ name: nameVal.trim() })
-        .eq('user_id', userId)
+        .eq('user_id', session.user.id)
         .select()
-      console.log('[handleSaveName] Response:', { error, data, count, status, statusText })
+      console.log('[handleSaveName] Response:', { error, data })
       if (error) throw error
       if (!data || data.length === 0) {
         console.warn('[handleSaveName] Update returned no rows — RLS may be blocking the write')
-        toast.show('Name save failed: no rows updated (check RLS)', 'error')
+        toast.show('Name save failed: could not update profile', 'error')
         return
       }
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
@@ -138,10 +145,16 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
   async function handleSaveBio() {
     setSavingProfile(true)
     try {
-      const { error } = await getSupabase()
+      const supabase = getSupabase()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.show('Session expired — please sign in again', 'error')
+        return
+      }
+      const { error } = await supabase
         .from('profiles')
         .update({ bio: bioVal.trim() })
-        .eq('user_id', userId)
+        .eq('user_id', session.user.id)
       if (error) throw error
       toast.show('Bio saved', 'success')
       setEditingBio(false)

@@ -208,13 +208,17 @@ function _logToSupabase(eventName: string, metadata: EventProperties): void {
   if (SKIP.has(eventName)) return
 
   import('@/lib/supabase/client')
-    .then(({ createClient }) => {
-      const sb = createClient()
-      return sb.from('analytics_events').insert({
-        user_id: _userId ?? null,
-        event_name: eventName,
-        metadata,
-      })
+    .then(async ({ createClient }) => {
+      try {
+        const sb = createClient()
+        await sb.from('analytics_events').insert({
+          user_id: _userId ?? null,
+          event_name: eventName,
+          metadata,
+        })
+      } catch {
+        // Table may not exist — silently ignore
+      }
     })
-    .catch((e) => { if (IS_DEV) console.warn('[Analytics] Supabase log failed', e) }) // never surface analytics errors to the user
+    .catch(() => {}) // never surface analytics errors to the user
 }
