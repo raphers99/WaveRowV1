@@ -111,7 +111,7 @@ function makePillMarkerClass(navigate: (path: string) => void) {
       const btn = document.createElement('button')
       btn.textContent = 'View Listing'
       btn.style.cssText = 'display:block;width:100%;background:#006747;color:#fff;border:none;text-align:center;padding:10px 0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer'
-      btn.addEventListener('click', (e) => { e.stopPropagation(); navigate(`/listings/${this.listing.id}`) })
+      btn.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/listings/${this.listing.id}` })
 
       // Caret
       const caret = document.createElement('div')

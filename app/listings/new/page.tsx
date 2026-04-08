@@ -167,7 +167,7 @@ export default function NewListingPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={() => router.push(`/listings/${publishedId}`)}
+              onClick={() => window.location.href = `/listings/${publishedId}`}
               style={{ width: '100%', background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
             >
               View Listing
