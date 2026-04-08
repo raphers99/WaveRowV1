@@ -25,14 +25,26 @@ export function ListingDetailPage() {
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    if (!id || id === 'placeholder') return
+    // In static export mode with Vercel rewrites, Next.js hydration provides 
+    // the static build ID ('placeholder') instead of the actual dynamic URL UUID.
+    // Read the true ID directly from the browser window location.
+    let realId = id
+    if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.split('/').filter(Boolean)
+      if (parts.length > 0) {
+        realId = parts[parts.length - 1]
+      }
+    }
+
+    if (!realId || realId === 'placeholder') return
+
     ;(async () => {
       try {
         const supabase = getSupabase()
         const { data, error } = await supabase
           .from('listings')
           .select('*')
-          .eq('id', id)
+          .eq('id', realId)
           .single()
 
         if (error || !data) {
