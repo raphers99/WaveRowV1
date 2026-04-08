@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ListingDetail } from './ListingDetail'
@@ -17,26 +17,21 @@ function getSupabase() {
   return createClient()
 }
 
-export function ListingDetailPage() {
-  const { id } = useParams<{ id: string }>()
+function ListingDetailRenderer() {
+  const searchParams = useSearchParams()
+  const realId = searchParams.get('id')
+  
   const [listing, setListing] = useState<Listing | null>(null)
   const [profile, setProfile] = useState<ListerProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    // In static export mode with Vercel rewrites, Next.js hydration provides 
-    // the static build ID ('placeholder') instead of the actual dynamic URL UUID.
-    // Read the true ID directly from the browser window location.
-    let realId = id
-    if (typeof window !== 'undefined') {
-      const parts = window.location.pathname.split('/').filter(Boolean)
-      if (parts.length > 0) {
-        realId = parts[parts.length - 1]
-      }
+    if (!realId) {
+      setNotFound(true)
+      setLoading(false)
+      return
     }
-
-    if (!realId || realId === 'placeholder') return
 
     ;(async () => {
       try {
@@ -55,7 +50,6 @@ export function ListingDetailPage() {
 
         setListing(data as Listing)
 
-        // Fetch poster's profile (non-fatal if missing)
         try {
           const { data: profileData } = await supabase
             .from('profiles')
@@ -63,21 +57,18 @@ export function ListingDetailPage() {
             .eq('user_id', (data as Listing).user_id)
             .single()
           if (profileData) setProfile(profileData as ListerProfile)
-        } catch {
-          // no-op — profile is optional
-        }
+        } catch {} // no-op
       } catch {
         setNotFound(true)
       } finally {
         setLoading(false)
       }
     })()
-  }, [id])
+  }, [realId])
 
   if (loading) {
     return (
       <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 120, minHeight: '100dvh', background: 'var(--surface)' }}>
-        {/* Photo skeleton */}
         <div style={{ aspectRatio: '16/9', background: 'rgba(0,103,71,0.08)' }} />
         <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px' }}>
           <div style={{ height: 28, width: 120, borderRadius: 10, background: 'rgba(0,103,71,0.1)', marginBottom: 16 }} />
@@ -121,4 +112,12 @@ export function ListingDetailPage() {
   }
 
   return <ListingDetail listing={listing} profile={profile} />
+}
+
+export default function ListingPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100dvh', background: 'var(--surface)' }} />}>
+      <ListingDetailRenderer />
+    </Suspense>
+  )
 }

@@ -395,15 +395,25 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
 
           {/* CTA */}
           {isOwner ? (
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleDelete}
-              disabled={deleting}
-              style={{ width: '100%', background: '#ef4444', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
-            >
-              {deleting ? 'Deleting...' : 'Delete Listing'}
-            </motion.button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push(`/listing/edit?id=${listing.id}`)}
+                style={{ flex: 1, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
+              >
+                Edit Listing
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? 'Deleting...' : 'Delete Listing'}
+              </motion.button>
+            </div>
           ) : (
             <motion.button
               whileHover={{ scale: 1.01 }}
@@ -423,15 +433,25 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
       <div style={{ position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom))', left: 0, right: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderTop: '0.5px solid rgba(0,103,71,0.1)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 40 }}>
         <PriceTag price={listing.rent} />
         {isOwner ? (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleDelete}
-            disabled={deleting}
-            style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
-          >
-            {deleting ? 'Deleting...' : 'Delete'}
-          </motion.button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => router.push(`/listing/edit?id=${listing.id}`)}
+              style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+            >
+              Edit
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </motion.button>
+          </div>
         ) : (
           <motion.button
             whileHover={{ scale: 1.02 }}

@@ -14,7 +14,7 @@ export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardPr
   }
 
   return (
-    <Link href={`/listings/${listing.id}`} onClick={() => onClick(listing.id)} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={`/listing?id=${listing.id}`} onClick={() => onClick(listing.id)} style={{ textDecoration: 'none', display: 'block' }}>
       <div
         style={{
           background: 'white',
