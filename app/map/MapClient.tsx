@@ -8,9 +8,9 @@ import type { Listing } from '@/types'
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 const CENTER = { lat: 29.9311, lng: -90.1175 }
-const ZOOM = 14
+const ZOOM = 15
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Price formatting ────────────────────────────────────────────────────────
 
 function formatPriceShort(rent: number): string {
   if (rent >= 1000) {
@@ -20,187 +20,159 @@ function formatPriceShort(rent: number): string {
   return `$${rent}`
 }
 
-function setPillDefault(el: HTMLElement) {
-  el.style.cssText = [
-    'background:#006747',
-    'color:#fff',
-    'font-family:var(--font-dm-sans),DM Sans,system-ui,sans-serif',
-    'font-weight:700',
-    'font-size:13px',
-    'padding:5px 10px',
-    'border-radius:20px',
-    'box-shadow:0 2px 8px rgba(0,0,0,0.22)',
-    'cursor:pointer',
-    'white-space:nowrap',
-    'transition:transform 0.15s ease,box-shadow 0.15s ease',
-    'transform:scale(1)',
-    'user-select:none',
-  ].join(';')
-}
+// ─── PricePillMarker — OverlayView pill (no mapId required) ─────────────────
 
-function setPillActive(el: HTMLElement) {
-  el.style.boxShadow = '0 4px 16px rgba(0,103,71,0.45)'
-  el.style.transform = 'scale(1.12)'
-}
-
-// Build the ListingPopup class lazily so it never evaluates on the server
-// (google.maps.OverlayView is undefined in Node.js / during SSR).
-// navigate is router.push — using it instead of <a href> prevents WKWebView
-// from doing a hard file:// navigation that would break Capacitor routing.
-function makePopupClass(navigate: (path: string) => void) {
-  return class ListingPopup extends google.maps.OverlayView {
-    private div: HTMLDivElement | null = null
+function makePillMarkerClass(navigate: (path: string) => void) {
+  return class PricePillMarker extends google.maps.OverlayView {
+    private pillDiv: HTMLDivElement | null = null
+    private popupDiv: HTMLDivElement | null = null
     private position: google.maps.LatLng
     private listing: Listing
-    private onClose: () => void
+    private active = false
+    private onActivate: (marker: PricePillMarker) => void
 
     constructor(
       position: google.maps.LatLng,
       listing: Listing,
-      onClose: () => void,
+      onActivate: (marker: PricePillMarker) => void,
     ) {
       super()
       this.position = position
       this.listing = listing
-      this.onClose = onClose
+      this.onActivate = onActivate
     }
 
     onAdd() {
-      const div = document.createElement('div')
-      div.style.cssText = [
+      // ── Pill ──
+      const pill = document.createElement('div')
+      pill.textContent = formatPriceShort(this.listing.rent)
+      pill.style.cssText = [
+        'position:absolute',
+        'background:#006747',
+        'color:#fff',
+        'font-family:DM Sans,system-ui,sans-serif',
+        'font-weight:700',
+        'font-size:13px',
+        'padding:5px 11px',
+        'border-radius:20px',
+        'box-shadow:0 2px 8px rgba(0,0,0,0.25)',
+        'cursor:pointer',
+        'white-space:nowrap',
+        'transform:translate(-50%,-50%)',
+        'transition:transform 0.15s,box-shadow 0.15s',
+        'user-select:none',
+        'z-index:1',
+      ].join(';')
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.onActivate(this)
+      })
+      this.pillDiv = pill
+      this.getPanes()!.overlayMouseTarget.appendChild(pill)
+
+      // ── Popup ──
+      const popup = document.createElement('div')
+      popup.style.cssText = [
         'position:absolute',
         'background:#fff',
         'border-radius:16px',
         'padding:16px',
-        'box-shadow:0 4px 24px rgba(0,0,0,0.12)',
+        'box-shadow:0 4px 24px rgba(0,0,0,0.15)',
         'width:220px',
-        'font-family:var(--font-dm-sans),DM Sans,system-ui,sans-serif',
+        'font-family:DM Sans,system-ui,sans-serif',
         'cursor:default',
         'z-index:100',
-        'transform:translate(-50%, calc(-100% - 18px))',
+        'transform:translate(-50%,calc(-100% - 24px))',
+        'display:none',
       ].join(';')
 
-      // Close button
+      // Close btn
       const closeBtn = document.createElement('button')
       closeBtn.innerHTML = '&times;'
-      closeBtn.style.cssText = [
-        'position:absolute',
-        'top:8px',
-        'right:10px',
-        'background:none',
-        'border:none',
-        'font-size:18px',
-        'line-height:1',
-        'color:#999',
-        'cursor:pointer',
-        'padding:0',
-        'width:20px',
-        'height:20px',
-        'display:flex',
-        'align-items:center',
-        'justify-content:center',
-      ].join(';')
-      closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.onClose()
-      })
+      closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:20px;line-height:1;color:#999;cursor:pointer;padding:0'
+      closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.deactivate() })
 
       // Title
       const title = document.createElement('div')
       title.textContent = this.listing.title ?? this.listing.address
-      title.style.cssText = [
-        'font-weight:700',
-        'font-size:15px',
-        'color:#111',
-        'margin-bottom:6px',
-        'line-height:1.3',
-        'padding-right:20px',
-      ].join(';')
+      title.style.cssText = 'font-weight:700;font-size:15px;color:#111;margin-bottom:6px;line-height:1.3;padding-right:20px'
 
-      // Price row
-      const priceRow = document.createElement('div')
-      priceRow.style.cssText = 'display:flex;align-items:baseline;gap:2px;margin-bottom:4px'
-      const priceMain = document.createElement('span')
-      priceMain.textContent = `$${this.listing.rent.toLocaleString()}`
-      priceMain.style.cssText = 'font-weight:700;font-size:18px;color:#1A3A2A'
-      const priceSuffix = document.createElement('span')
-      priceSuffix.textContent = '/mo'
-      priceSuffix.style.cssText = 'font-size:13px;color:#666'
-      priceRow.appendChild(priceMain)
-      priceRow.appendChild(priceSuffix)
+      // Price
+      const price = document.createElement('div')
+      price.style.cssText = 'font-weight:700;font-size:18px;color:#006747;margin-bottom:4px'
+      price.textContent = `$${this.listing.rent.toLocaleString()}/mo`
 
-      // Beds / baths
+      // Meta
       const meta = document.createElement('div')
       meta.textContent = `${this.listing.beds} bed · ${this.listing.baths} bath`
       meta.style.cssText = 'font-size:13px;color:#666;margin-bottom:12px'
 
-      // CTA button — use button+navigate instead of <a href> so Capacitor's
-      // WKWebView doesn't do a hard file:// navigation to a non-existent path.
-      const listingPath = `/listings/${this.listing.id}`
+      // CTA
       const btn = document.createElement('button')
       btn.textContent = 'View Listing'
-      btn.style.cssText = [
-        'display:block',
-        'width:100%',
-        'background:#1A3A2A',
-        'color:#fff',
-        'border:none',
-        'text-align:center',
-        'padding:10px 0',
-        'border-radius:10px',
-        'font-size:14px',
-        'font-weight:600',
-        'cursor:pointer',
-      ].join(';')
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        navigate(listingPath)
-      })
+      btn.style.cssText = 'display:block;width:100%;background:#006747;color:#fff;border:none;text-align:center;padding:10px 0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer'
+      btn.addEventListener('click', (e) => { e.stopPropagation(); navigate(`/listings/${this.listing.id}`) })
 
-      // Caret triangle
+      // Caret
       const caret = document.createElement('div')
-      caret.style.cssText = [
-        'position:absolute',
-        'bottom:-8px',
-        'left:50%',
-        'transform:translateX(-50%)',
-        'width:0',
-        'height:0',
-        'border-left:9px solid transparent',
-        'border-right:9px solid transparent',
-        'border-top:9px solid #fff',
-        'filter:drop-shadow(0 2px 2px rgba(0,0,0,0.08))',
-      ].join(';')
+      caret.style.cssText = 'position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:9px solid #fff;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.08))'
 
-      div.appendChild(closeBtn)
-      div.appendChild(title)
-      div.appendChild(priceRow)
-      div.appendChild(meta)
-      div.appendChild(btn)
-      div.appendChild(caret)
+      popup.appendChild(closeBtn)
+      popup.appendChild(title)
+      popup.appendChild(price)
+      popup.appendChild(meta)
+      popup.appendChild(btn)
+      popup.appendChild(caret)
 
-      google.maps.event.addDomListener(div, 'mousedown', (e: Event) => e.stopPropagation())
-      google.maps.event.addDomListener(div, 'click', (e: Event) => e.stopPropagation())
+      google.maps.event.addDomListener(popup, 'mousedown', (e: Event) => e.stopPropagation())
+      google.maps.event.addDomListener(popup, 'click', (e: Event) => e.stopPropagation())
 
-      this.div = div
-      this.getPanes()!.floatPane.appendChild(div)
+      this.popupDiv = popup
+      this.getPanes()!.floatPane.appendChild(popup)
     }
 
     draw() {
-      if (!this.div) return
-      const point = this.getProjection().fromLatLngToDivPixel(this.position)!
-      this.div.style.left = `${point.x}px`
-      this.div.style.top = `${point.y}px`
+      if (!this.pillDiv || !this.popupDiv) return
+      const point = this.getProjection().fromLatLngToDivPixel(this.position)
+      if (!point) return
+      this.pillDiv.style.left = `${point.x}px`
+      this.pillDiv.style.top = `${point.y}px`
+      this.popupDiv.style.left = `${point.x}px`
+      this.popupDiv.style.top = `${point.y}px`
+    }
+
+    activate() {
+      this.active = true
+      if (this.pillDiv) {
+        this.pillDiv.style.background = '#004d33'
+        this.pillDiv.style.transform = 'translate(-50%,-50%) scale(1.12)'
+        this.pillDiv.style.boxShadow = '0 4px 16px rgba(0,103,71,0.5)'
+        this.pillDiv.style.zIndex = '2'
+      }
+      if (this.popupDiv) this.popupDiv.style.display = 'block'
+    }
+
+    deactivate() {
+      this.active = false
+      if (this.pillDiv) {
+        this.pillDiv.style.background = '#006747'
+        this.pillDiv.style.transform = 'translate(-50%,-50%) scale(1)'
+        this.pillDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)'
+        this.pillDiv.style.zIndex = '1'
+      }
+      if (this.popupDiv) this.popupDiv.style.display = 'none'
     }
 
     onRemove() {
-      this.div?.parentNode?.removeChild(this.div)
-      this.div = null
+      this.pillDiv?.parentNode?.removeChild(this.pillDiv)
+      this.popupDiv?.parentNode?.removeChild(this.popupDiv)
+      this.pillDiv = null
+      this.popupDiv = null
     }
   }
 }
 
-type PopupInstance = InstanceType<ReturnType<typeof makePopupClass>>
+type PillMarkerInstance = InstanceType<ReturnType<typeof makePillMarkerClass>>
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
@@ -208,10 +180,8 @@ export default function MapClient() {
   const router = useRouter()
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<google.maps.Map | null>(null)
-  const geocoder = useRef<google.maps.Geocoder | null>(null)
-  const activePopup = useRef<PopupInstance | null>(null)
-  const activeMarkerEl = useRef<HTMLElement | null>(null)
-  const PopupClass = useRef<ReturnType<typeof makePopupClass> | null>(null)
+  const activeMarker = useRef<PillMarkerInstance | null>(null)
+  const PillMarkerClass = useRef<ReturnType<typeof makePillMarkerClass> | null>(null)
 
   const [mapReady, setMapReady] = useState(false)
   const [listings, setListings] = useState<Listing[]>([])
@@ -232,159 +202,91 @@ export default function MapClient() {
       })
   }, [])
 
-  // Load Google Maps + marker library, then init
+  // Load Google Maps (no extra libraries needed — OverlayView is in core)
   useEffect(() => {
     if (!API_KEY) return
 
-    async function initMap() {
+    function initMap() {
       if (!mapRef.current || mapInstance.current) return
       try {
-      await google.maps.importLibrary('marker')
-
-      // Re-check after async gap — component may have unmounted during await
-      if (!mapRef.current || mapInstance.current) return
-
-      // Build popup class after google.maps is available
-      PopupClass.current = makePopupClass((path) => router.push(path))
-
-      mapInstance.current = new google.maps.Map(mapRef.current!, {
-        center: CENTER,
-        zoom: ZOOM,
-        mapId: 'waverow_map',
-        mapTypeId: 'roadmap',
-        disableDefaultUI: true,
-        zoomControl: true,
-        zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
-      })
-      geocoder.current = new google.maps.Geocoder()
-      setMapReady(true)
+        PillMarkerClass.current = makePillMarkerClass((path) => router.push(path))
+        mapInstance.current = new google.maps.Map(mapRef.current, {
+          center: CENTER,
+          zoom: ZOOM,
+          mapTypeId: 'roadmap',
+          disableDefaultUI: true,
+          zoomControl: true,
+          zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
+          // No mapId needed — OverlayView works without it
+        })
+        setMapReady(true)
       } catch {
         setMapError('Failed to load the map. Please refresh the page.')
       }
     }
 
-    if (window.google?.maps) {
-      initMap()
-      return
-    }
+    if (window.google?.maps) { initMap(); return }
 
     const existing = document.querySelector('script[data-gmaps]')
-    if (existing) {
-      existing.addEventListener('load', initMap)
-      return
-    }
+    if (existing) { existing.addEventListener('load', initMap); return }
 
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=marker`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}`
     script.async = true
     script.dataset.gmaps = '1'
     script.addEventListener('load', initMap)
     document.head.appendChild(script)
   }, [])
 
-  const closePopup = useCallback(() => {
-    activePopup.current?.setMap(null)
-    activePopup.current = null
-    if (activeMarkerEl.current) {
-      setPillDefault(activeMarkerEl.current)
-      activeMarkerEl.current = null
-    }
+  const closeActive = useCallback(() => {
+    activeMarker.current?.deactivate()
+    activeMarker.current = null
   }, [])
 
   // Place markers once map + listings ready
   useEffect(() => {
-    if (!mapReady || !mapInstance.current || listings.length === 0) return
+    if (!mapReady || !mapInstance.current || !PillMarkerClass.current) return
 
     const map = mapInstance.current
-    const gc = geocoder.current!
-    const Popup = PopupClass.current!
-    const newMarkers: google.maps.marker.AdvancedMarkerElement[] = []
+    const Marker = PillMarkerClass.current
+    const geocoder = new google.maps.Geocoder()
+
+    function onActivate(marker: PillMarkerInstance) {
+      if (activeMarker.current && activeMarker.current !== marker) {
+        activeMarker.current.deactivate()
+      }
+      marker.activate()
+      activeMarker.current = marker
+    }
 
     function addMarker(position: google.maps.LatLngLiteral, listing: Listing) {
-      const pill = document.createElement('div')
-      pill.textContent = formatPriceShort(listing.rent)
-      setPillDefault(pill)
-
-      const marker = new google.maps.marker.AdvancedMarkerElement({
-        map,
-        position,
-        content: pill,
-      })
-
-      marker.addListener('click', () => {
-        if (activePopup.current) closePopup()
-
-        setPillActive(pill)
-        activeMarkerEl.current = pill
-
-        const latLng = new google.maps.LatLng(position.lat, position.lng)
-        const popup = new Popup(latLng, listing, closePopup)
-        popup.setMap(map)
-        activePopup.current = popup
-      })
-
-      newMarkers.push(marker)
+      const latLng = new google.maps.LatLng(position.lat, position.lng)
+      const m = new Marker(latLng, listing, onActivate)
+      m.setMap(map)
     }
 
     async function placeAll() {
-      const { MarkerClusterer, GridAlgorithm } = await import('@googlemaps/markerclusterer')
-
       for (const listing of listings) {
         if (listing.lat && listing.lng) {
           addMarker({ lat: listing.lat, lng: listing.lng }, listing)
         } else {
           await new Promise<void>((resolve) => {
-            gc.geocode(
-              { address: listing.address },
-              (results, status) => {
-                if (status === 'OK' && results?.[0]) {
-                  addMarker(results[0].geometry.location.toJSON(), listing)
-                }
-                resolve()
-              },
-            )
+            geocoder.geocode({ address: listing.address }, (results, status) => {
+              if (status === 'OK' && results?.[0]) {
+                addMarker(results[0].geometry.location.toJSON(), listing)
+              }
+              resolve()
+            })
           })
         }
       }
-
-      new MarkerClusterer({
-        map,
-        markers: newMarkers,
-        algorithm: new GridAlgorithm({ gridSize: 60 }),
-        renderer: {
-          render({ count, position }) {
-            const div = document.createElement('div')
-            div.textContent = String(count)
-            div.style.cssText = [
-              'width:36px',
-              'height:36px',
-              'border-radius:50%',
-              'background:#1A3A2A',
-              'color:#fff',
-              'font-family:var(--font-dm-sans),DM Sans,system-ui,sans-serif',
-              'font-weight:700',
-              'font-size:13px',
-              'display:flex',
-              'align-items:center',
-              'justify-content:center',
-              'box-shadow:0 2px 8px rgba(0,0,0,0.2)',
-              'cursor:pointer',
-            ].join(';')
-
-            return new google.maps.marker.AdvancedMarkerElement({
-              position,
-              content: div,
-            })
-          },
-        },
-      })
     }
 
     placeAll()
-    map.addListener('click', closePopup)
+    map.addListener('click', closeActive)
 
-    return () => { closePopup() }
-  }, [mapReady, listings, closePopup])
+    return () => { closeActive() }
+  }, [mapReady, listings, closeActive])
 
   if (mapError) {
     return (
@@ -401,35 +303,11 @@ export default function MapClient() {
 
   if (!API_KEY) {
     return (
-      <div style={{
-        paddingTop: 'calc(56px + env(safe-area-inset-top))',
-        paddingBottom: 'calc(64px + env(safe-area-inset-bottom))',
-        minHeight: '100dvh',
-        background: 'var(--surface)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-      }}>
+      <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(64px + env(safe-area-inset-bottom))', minHeight: '100dvh', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ textAlign: 'center', maxWidth: 320 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 16,
-            background: 'rgba(0,103,71,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-          }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke="var(--olive)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-            </svg>
-          </div>
-          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px' }}>
-            Map unavailable
-          </p>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px' }}>Map unavailable</p>
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-            Add <code style={{ background: 'rgba(0,0,0,0.06)', padding: '1px 5px', borderRadius: 4 }}>
-              NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-            </code> to .env to enable map
+            Add <code style={{ background: 'rgba(0,0,0,0.06)', padding: '1px 5px', borderRadius: 4 }}>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to .env to enable map
           </p>
         </div>
       </div>
@@ -448,9 +326,7 @@ export default function MapClient() {
     }}>
       {loading && (
         <div style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 10,
+          position: 'absolute', inset: 0, zIndex: 10,
           background: 'linear-gradient(90deg, #e2e2e2 25%, #d0d0d0 50%, #e2e2e2 75%)',
           backgroundSize: '200% 100%',
           animation: 'shimmer 1.4s ease-in-out infinite',
@@ -458,14 +334,7 @@ export default function MapClient() {
       )}
       {!loading && listings.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(4px)' }}>
-          <div style={{ textAlign: 'center', padding: 24 }}>
-            <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, color: 'var(--text-primary)', margin: 0 }}>
-              No listings found in this area
-            </p>
-            <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '4px 0 0' }}>
-              Try moving the map or browsing all listings.
-            </p>
-          </div>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, color: 'var(--text-primary)', margin: 0 }}>No listings found in this area</p>
         </div>
       )}
       <div ref={mapRef} style={{ flex: 1 }} />
