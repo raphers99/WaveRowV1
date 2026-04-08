@@ -25,7 +25,7 @@ export function ListingDetailPage() {
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    if (!id) return
+    if (!id || id === 'placeholder') return
     ;(async () => {
       try {
         const supabase = getSupabase()

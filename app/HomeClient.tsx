@@ -142,12 +142,11 @@ export function HomeClient({
   useEffect(() => {
     if (!userId) return
     createClient()
-      .from('profiles')
-      .select('saved_listings')
+      .from('saved_listings')
+      .select('listing_id')
       .eq('user_id', userId)
-      .single()
       .then(({ data }) => {
-        if (data) setSavedIds(new Set((data as { saved_listings: string[] }).saved_listings ?? []))
+        if (data) setSavedIds(new Set(data.map((r: { listing_id: string }) => r.listing_id)))
       })
   }, [userId])
 

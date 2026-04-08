@@ -83,9 +83,9 @@ export function ListingsClient({
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         setUserId(data.session.user.id)
-        supabase.from('profiles').select('saved_listings').eq('user_id', data.session.user.id).single().then(({ data: profile }) => {
-          if (profile) {
-            setSavedIds(new Set((profile as any).saved_listings ?? []))
+        supabase.from('saved_listings').select('listing_id').eq('user_id', data.session.user.id).then(({ data: saved }) => {
+          if (saved) {
+            setSavedIds(new Set(saved.map((r: { listing_id: string }) => r.listing_id)))
           }
         })
       }

@@ -3,6 +3,10 @@
     {
       "source": "/listings/:id((?!new|placeholder)[^/]+)/",
       "destination": "/listings/placeholder/"
+    },
+    {
+      "source": "/listings/:id((?!new|placeholder)[^/]+)",
+      "destination": "/listings/placeholder/"
     }
   ]
 }
