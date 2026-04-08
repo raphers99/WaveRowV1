@@ -111,9 +111,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setSavingProfile(true)
     try {
       const { error } = await getSupabase()
-        .from('profiles')
-        .update({ name: nameVal.trim() })
-        .eq('user_id', userId)
+        .rpc('update_profile_name', { p_user_id: userId, p_name: nameVal.trim() })
       if (error) throw error
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
       toast.show('Name saved', 'success')
@@ -130,9 +128,7 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     setSavingProfile(true)
     try {
       const { error } = await getSupabase()
-        .from('profiles')
-        .update({ bio: bioVal.trim() })
-        .eq('user_id', userId)
+        .rpc('update_profile_bio', { p_user_id: userId, p_bio: bioVal.trim() })
       if (error) throw error
       toast.show('Bio saved', 'success')
       setEditingBio(false)
