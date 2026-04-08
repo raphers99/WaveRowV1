@@ -8,7 +8,8 @@ import { usePageTracking } from '@/hooks/usePageTracking'
 function hideChromeForPath(pathname: string) {
   const login = pathname === '/login' || pathname === '/login/'
   const newListing = pathname === '/listings/new' || pathname === '/listings/new/'
-  return login || newListing
+  const editListing = pathname === '/listing/edit' || pathname === '/listing/edit/'
+  return login || newListing || editListing
 }
 
 function GlobalFooter() {
