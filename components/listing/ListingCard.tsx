@@ -14,7 +14,7 @@ export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardPr
   }
 
   return (
-    <a href={`/listings/${listing.id}`} onClick={() => onClick(listing.id)} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={`/listings/${listing.id}`} onClick={() => onClick(listing.id)} style={{ textDecoration: 'none', display: 'block' }}>
       <div
         style={{
           background: 'white',
@@ -27,7 +27,7 @@ export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardPr
         className="listing-card-surface"
       >
         <div style={{ aspectRatio: '4/3', position: 'relative', overflow: 'hidden' }}>
-          <ListingImage src={listing.photos[0]} alt={listing.title ?? listing.address} />
+          <ListingImage src={listing.photos?.[0]} alt={listing.title ?? listing.address} />
           <div style={{ position: 'absolute', top: 10, right: 10 }}>
             <SaveButton isSaved={isSaved} onToggle={handleSave} />
           </div>
@@ -47,6 +47,6 @@ export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardPr
           )}
         </div>
       </div>
-    </a>
+    </Link>
   )
 }

@@ -23,14 +23,34 @@ export function MessagesContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getSupabase().auth.getSession().then(({ data }) => {
+    let channel: ReturnType<ReturnType<typeof getSupabase>['channel']> | null = null
+    const supabase = getSupabase()
+
+    supabase.auth.getSession().then(({ data }) => {
       if (!data.session) { router.replace('/login'); return }
-      setUserId(data.session.user.id)
-      fetchConversations(data.session.user.id)
-        .then(setConversations)
-        .catch(() => {})
-        .finally(() => setLoading(false))
+      const uid = data.session.user.id
+      setUserId(uid)
+
+      const loadConvos = () => {
+        fetchConversations(uid)
+          .then(setConversations)
+          .catch(() => {})
+          .finally(() => setLoading(false))
+      }
+      
+      loadConvos()
+
+      channel = supabase
+        .channel('public:conversations')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, (payload) => {
+           loadConvos()
+        })
+        .subscribe()
     })
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [router])
 
   const active = conversations.find(c => c.id === activeId)

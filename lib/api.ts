@@ -123,3 +123,15 @@ export async function startConversation(participantOne: string, participantTwo: 
   if (error) throw error
   return data as Conversation
 }
+
+export async function deleteListing(userId: string, listingId: string): Promise<void> {
+  const supabase = getClient()
+  // RLS logic relies on user_id inside the delete table wrapper securely
+  const { error } = await supabase
+    .from('listings')
+    .delete()
+    .eq('id', listingId)
+    .eq('user_id', userId)
+
+  if (error) throw error
+}

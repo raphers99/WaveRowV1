@@ -284,3 +284,33 @@ $$;
 create or replace trigger on_new_message
   after insert on messages
   for each row execute function update_conversation_metadata();
+
+-- Enable Realtime
+drop publication if exists supabase_realtime;
+create publication supabase_realtime;
+commit;
+alter publication supabase_realtime add table messages;
+alter publication supabase_realtime add table conversations;
+alter publication supabase_realtime add table listings;
+
+-- Storage
+insert into storage.buckets (id, name, public) 
+values ('listing-images', 'listing-images', true)
+on conflict (id) do nothing;
+
+create policy "Images are publicly accessible"
+  on storage.objects for select
+  using ( bucket_id = 'listing-images' );
+
+create policy "Users can upload images"
+  on storage.objects for insert
+  with check ( bucket_id = 'listing-images' and auth.uid() = owner );
+
+create policy "Users can update their own images"
+  on storage.objects for update
+  using ( auth.uid() = owner )
+  with check ( bucket_id = 'listing-images' );
+
+create policy "Users can delete their own images"
+  on storage.objects for delete
+  using ( auth.uid() = owner );

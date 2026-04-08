@@ -9,7 +9,7 @@ import { toast } from '@/components/ui'
 import { PriceTag } from '@/components/listing/PriceTag'
 import { SubletBadge } from '@/components/listing/SubletBadge'
 import { fadeUp } from '@/lib/motion'
-import { startConversation } from '@/lib/api'
+import { startConversation, deleteListing } from '@/lib/api'
 import type { Listing } from '@/types'
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -47,6 +47,9 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewBody, setReviewBody] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
+
+  const [deleting, setDeleting] = useState(false)
+  const isOwner = currentUserId === listing.user_id
 
   // ai_flags is not in the Listing type but may exist on real rows
   const aiFlags: string[] = (listing as Listing & { ai_flags?: string[] }).ai_flags ?? []
@@ -113,6 +116,21 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
     setContacting(false)
   }
 
+  async function handleDelete() {
+    if (!currentUserId || !isOwner) return
+    if (!confirm('Are you sure you want to delete this listing? This action cannot be undone.')) return
+    
+    setDeleting(true)
+    try {
+      await deleteListing(currentUserId, listing.id)
+      toast.show('Listing deleted', 'success')
+      router.replace('/dashboard')
+    } catch {
+      toast.show('Could not delete listing', 'error')
+      setDeleting(false)
+    }
+  }
+
   function prev() { setPhotoIndex(i => (i - 1 + photos.length) % photos.length) }
   function next() { setPhotoIndex(i => (i + 1) % photos.length) }
 
@@ -120,8 +138,12 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
   const posterInitials = posterName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const roleLabel = profile?.role === 'landlord' ? 'Landlord' : profile?.role === 'subletter' ? 'Subletter' : 'Student'
 
+  const mapCenter = listing.lat && listing.lng 
+    ? `${listing.lat},${listing.lng}` 
+    : encodeURIComponent(listing.address)
+
   const staticMapUrl = MAPS_KEY
-    ? `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(listing.address)}&zoom=15&size=600x200&scale=2&markers=color:0x006747%7C${encodeURIComponent(listing.address)}&key=${MAPS_KEY}`
+    ? `https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter}&zoom=15&size=600x200&scale=2&markers=color:0x006747%7C${mapCenter}&key=${MAPS_KEY}`
     : null
 
   return (
@@ -372,15 +394,27 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
           </div>
 
           {/* CTA */}
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleContact}
-            disabled={contacting}
-            style={{ width: '100%', background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
-          >
-            {contacting ? 'Opening...' : 'Contact About This Listing'}
-          </motion.button>
+          {isOwner ? (
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{ width: '100%', background: '#ef4444', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
+            >
+              {deleting ? 'Deleting...' : 'Delete Listing'}
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleContact}
+              disabled={contacting}
+              style={{ width: '100%', background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
+            >
+              {contacting ? 'Opening...' : 'Contact About This Listing'}
+            </motion.button>
+          )}
 
         </motion.div>
       </div>
@@ -388,15 +422,27 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
       {/* Sticky price bar */}
       <div style={{ position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom))', left: 0, right: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderTop: '0.5px solid rgba(0,103,71,0.1)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 40 }}>
         <PriceTag price={listing.rent} />
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={handleContact}
-          disabled={contacting}
-          style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
-        >
-          {contacting ? 'Opening...' : 'Contact Landlord'}
-        </motion.button>
+        {isOwner ? (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </motion.button>
+        ) : (
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleContact}
+            disabled={contacting}
+            style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
+          >
+            {contacting ? 'Opening...' : 'Contact Landlord'}
+          </motion.button>
+        )}
       </div>
     </div>
   )

@@ -71,7 +71,10 @@ export default function NewListingPage() {
   function canProceed() {
     if (step === 0) return !!form.type
     if (step === 1) return !!form.rent && form.beds > 0 && form.baths > 0
-    if (step === 2) return !!form.address
+    if (step === 2) {
+      if (form.is_sublease) return !!form.address && !!form.original_lease_end && !!form.move_out_date
+      return !!form.address
+    }
     if (step === 4) return true
     return true
   }
@@ -103,6 +106,26 @@ export default function NewListingPage() {
         }
       }
 
+      // Geocode the address
+      let lat: number | null = null
+      let lng: number | null = null
+      const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      if (API_KEY && form.address) {
+        try {
+          const searchQuery = form.address.toLowerCase().includes('new orleans') 
+            ? form.address 
+            : `${form.address}, New Orleans, LA`
+          const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${API_KEY}`)
+          const data = await res.json()
+          if (data.results && data.results.length > 0) {
+            lat = data.results[0].geometry.location.lat
+            lng = data.results[0].geometry.location.lng
+          }
+        } catch (err) {
+          console.error("Geocoding failed", err)
+        }
+      }
+
       const { data: listing, error: insertErr } = await supabase
         .from('listings')
         .insert({
@@ -116,6 +139,8 @@ export default function NewListingPage() {
           deposit: form.deposit ? Number(form.deposit) : null,
           address: form.address,
           neighborhood: null,
+          lat,
+          lng,
           description: form.description || null,
           furnished: form.furnished,
           pets: form.pets,
