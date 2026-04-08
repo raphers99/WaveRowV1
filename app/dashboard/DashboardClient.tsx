@@ -118,8 +118,9 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
       toast.show('Name saved', 'success')
       setEditingName(false)
-    } catch {
-      toast.show('Could not save name — please try again', 'error')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      toast.show(`Name save failed: ${msg}`, 'error')
     } finally {
       setSavingProfile(false)
     }
