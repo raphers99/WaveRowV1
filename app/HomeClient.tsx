@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Shield, MessageCircle, Calendar, Users, Home, AlertTriangle, Lock } from 'lucide-react'
+import { Shield, Home, AlertTriangle, Lock } from 'lucide-react'
 import { Button, toast } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { saveListing, unsaveListing } from '@/lib/api'
@@ -320,22 +320,6 @@ export function HomeClient({
               </Link>
             </div>
 
-            {/* Platform features preview */}
-            <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-              {[
-                { icon: <Calendar size={22} color="var(--olive)" />, title: 'Short-Term Sublets', desc: 'Find and post semester sublets from fellow students.' },
-                { icon: <Users size={22} color="var(--olive)" />, title: 'Roommate Matching', desc: 'Browse profiles, filter by budget, and form groups.' },
-                { icon: <MessageCircle size={22} color="var(--olive)" />, title: 'Direct Messaging', desc: 'Message landlords and students — no middleman.' },
-              ].map(feat => (
-                <div key={feat.title} className="card" style={{ padding: 24 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                    {feat.icon}
-                  </div>
-                  <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{feat.title}</h3>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>{feat.desc}</p>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
@@ -415,31 +399,6 @@ export function HomeClient({
                 )}
               </>
             )}
-
-            {/* Platform Features */}
-            <div style={{ paddingTop: 48, paddingBottom: 8 }}>
-              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 700, margin: '0 0 16px', color: 'var(--text-primary)' }}>
-                Platform Features
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
-                {[
-                  { icon: <Calendar size={22} color="var(--olive)" />, title: 'Short-Term Sublets', desc: 'Find and post semester sublets from fellow students.', href: '/sublets' },
-                  { icon: <Users size={22} color="var(--olive)" />, title: 'Roommate Matching', desc: 'Browse profiles, filter by budget, and form groups.', href: '/roommates' },
-                ].map(feat => (
-                  <motion.div key={feat.title} whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-                    <Link href={feat.href} style={{ textDecoration: 'none', display: 'block' }}>
-                      <div className="card" style={{ padding: 24, cursor: 'pointer' }}>
-                        <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                          {feat.icon}
-                        </div>
-                        <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>{feat.title}</h3>
-                        <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>{feat.desc}</p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
 
             {/* CTA Banner */}
             <motion.div
