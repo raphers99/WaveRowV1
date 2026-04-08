@@ -112,7 +112,8 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     try {
       const { error } = await getSupabase()
         .from('profiles')
-        .upsert({ user_id: userId, name: nameVal.trim() }, { onConflict: 'user_id' })
+        .update({ name: nameVal.trim() })
+        .eq('user_id', userId)
       if (error) throw error
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
       toast.show('Name saved', 'success')
@@ -129,7 +130,8 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     try {
       const { error } = await getSupabase()
         .from('profiles')
-        .upsert({ user_id: userId, bio: bioVal.trim() }, { onConflict: 'user_id' })
+        .update({ bio: bioVal.trim() })
+        .eq('user_id', userId)
       if (error) throw error
       toast.show('Bio saved', 'success')
       setEditingBio(false)
