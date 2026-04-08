@@ -181,6 +181,7 @@ export default function MapClient() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<google.maps.Map | null>(null)
   const activeMarker = useRef<PillMarkerInstance | null>(null)
+  const markersRef = useRef<PillMarkerInstance[]>([])
   const PillMarkerClass = useRef<ReturnType<typeof makePillMarkerClass> | null>(null)
 
   const [mapReady, setMapReady] = useState(false)
@@ -188,18 +189,30 @@ export default function MapClient() {
   const [loading, setLoading] = useState(true)
   const [mapError, setMapError] = useState<string | null>(null)
 
-  // Fetch listings
-  useEffect(() => {
-    createClient()
+  const fetchListingsInBounds = useCallback(async () => {
+    if (!mapInstance.current) return
+    const bounds = mapInstance.current.getBounds()
+    if (!bounds) return
+    
+    const ne = bounds.getNorthEast()
+    const sw = bounds.getSouthWest()
+
+    const { data, error } = await createClient()
       .from('listings')
       .select('id, title, address, rent, beds, baths, lat, lng')
       .eq('status', 'ACTIVE')
-      .limit(200)
-      .then(({ data, error }) => {
-        if (error) toast.show('Could not load map listings', 'error')
-        setListings((data ?? []) as Listing[])
-        setLoading(false)
-      })
+      .gte('lat', sw.lat())
+      .lte('lat', ne.lat())
+      .gte('lng', sw.lng())
+      .lte('lng', ne.lng())
+      .limit(100)
+
+    if (error) {
+      toast.show('Could not load map listings', 'error')
+    } else {
+      setListings((data ?? []) as Listing[])
+    }
+    setLoading(false)
   }, [])
 
   // Load Google Maps (no extra libraries needed — OverlayView is in core)
@@ -220,6 +233,7 @@ export default function MapClient() {
           // No mapId needed — OverlayView works without it
         })
         setMapReady(true)
+        mapInstance.current.addListener('idle', fetchListingsInBounds)
       } catch {
         setMapError('Failed to load the map. Please refresh the page.')
       }
@@ -258,10 +272,14 @@ export default function MapClient() {
       activeMarker.current = marker
     }
 
+    markersRef.current.forEach(m => m.setMap(null))
+    markersRef.current = []
+
     function addMarker(position: google.maps.LatLngLiteral, listing: Listing) {
       const latLng = new google.maps.LatLng(position.lat, position.lng)
       const m = new Marker(latLng, listing, onActivate)
       m.setMap(map)
+      markersRef.current.push(m)
     }
 
     // Only place listings that already have coordinates.
@@ -274,7 +292,11 @@ export default function MapClient() {
 
     map.addListener('click', closeActive)
 
-    return () => { closeActive() }
+    return () => { 
+      closeActive()
+      markersRef.current.forEach(m => m.setMap(null))
+      markersRef.current = []
+    }
   }, [mapReady, listings, closeActive])
 
   if (mapError) {
