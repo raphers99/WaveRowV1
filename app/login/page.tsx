@@ -66,14 +66,31 @@ function LoginPageInner() {
     const { data, error: e } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
     if (e) { setError('Invalid code. Please try again.'); setLoading(false); return }
     if (data.user) {
-      await supabase.from('profiles').upsert({
-        user_id: data.user.id,
-        name: email.split('@')[0],
-        role,
-        verified: true,
-        verification_status: 'verified',
-        verification_type: role,
-      }, { onConflict: 'user_id' })
+      // Check if the user already has a profile to avoid overwriting their name
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+      if (existing) {
+        // Returning user — update verification fields only (preserve name)
+        await supabase.from('profiles').update({
+          role,
+          verified: true,
+          verification_status: 'verified',
+          verification_type: role,
+        }).eq('user_id', data.user.id)
+      } else {
+        // New user — create profile with email-derived name
+        await supabase.from('profiles').insert({
+          user_id: data.user.id,
+          name: email.split('@')[0],
+          role,
+          verified: true,
+          verification_status: 'verified',
+          verification_type: role,
+        })
+      }
     }
     router.replace(nextPath)
   }
@@ -94,14 +111,23 @@ function LoginPageInner() {
       setLoading(false)
       if (e) { setError(e.message); return }
       if (data.user) {
-        await supabase.from('profiles').upsert({
-          user_id: data.user.id,
-          name: email.split('@')[0],
-          role: 'landlord',
-          verified: false,
-          verification_status: 'unverified',
-          verification_type: 'landlord',
-        }, { onConflict: 'user_id' })
+        // Check if the user already has a profile to avoid overwriting their name
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .maybeSingle()
+        if (!existing) {
+          // New user — create profile with email-derived name
+          await supabase.from('profiles').insert({
+            user_id: data.user.id,
+            name: email.split('@')[0],
+            role: 'landlord',
+            verified: false,
+            verification_status: 'unverified',
+            verification_type: 'landlord',
+          })
+        }
       }
       router.replace(nextPath)
     }
