@@ -110,23 +110,16 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
     if (!nameVal.trim()) return
     setSavingProfile(true)
     try {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        toast.show('Session expired — please sign in again', 'error')
-        return
-      }
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('profiles')
         .update({ name: nameVal.trim() })
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
       if (error) throw error
       trackEvent('edit_profile', { field: 'name', screen_name: 'profile' })
       toast.show('Name saved', 'success')
       setEditingName(false)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      console.error('[handleSaveName] Error:', err)
       toast.show(`Name save failed: ${msg}`, 'error')
     } finally {
       setSavingProfile(false)
@@ -136,16 +129,10 @@ export function DashboardClient({ profile, userId, email }: { profile: Profile |
   async function handleSaveBio() {
     setSavingProfile(true)
     try {
-      const supabase = getSupabase()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        toast.show('Session expired — please sign in again', 'error')
-        return
-      }
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('profiles')
         .update({ bio: bioVal.trim() })
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
       if (error) throw error
       toast.show('Bio saved', 'success')
       setEditingBio(false)
