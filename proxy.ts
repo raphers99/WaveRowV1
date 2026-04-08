@@ -32,11 +32,23 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const PROTECTED = ['/dashboard', '/messages', '/listings/new', '/swipe', '/settings', '/roommates', '/sublets']
+  const PROTECTED = [
+    '/dashboard',
+    '/messages',
+    '/listings/new',
+    '/map',
+    '/swipe',
+    '/settings',
+    '/roommates',
+    '/sublets',
+    '/create',
+  ]
   const needsAuth = PROTECTED.some(p => pathname.startsWith(p))
 
   if (needsAuth && !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const url = new URL('/login', request.url)
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
   }
 
   return supabaseResponse

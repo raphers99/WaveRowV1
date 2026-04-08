@@ -25,7 +25,7 @@
 
 ## Stack
 
-- Next.js 16.2.0 (App Router, `'use client'` only when interactivity required)
+- Next.js 16.2.0 — middleware is `proxy.ts` (NOT `middleware.ts`), export is `proxy` (NOT `middleware`)
 - TypeScript (strict mode, zero `any`)
 - Tailwind CSS v4 (no inline styles)
 - Supabase (DB, Auth, Realtime, Storage)
@@ -67,7 +67,9 @@ src/
 - Method: 6-digit OTP via Supabase
 - Always use `verifyOtp` with `type: 'email'`
 - OTP handler: `/auth/callback`
-- Protected routes (redirect if no session): `/create`, `/dashboard`, `/messages`
+- Proxy middleware: `proxy.ts` (Next.js 16 convention — NOT `middleware.ts`)
+- Protected routes enforced in `proxy.ts`: `/dashboard`, `/messages`, `/listings/new`, `/map`, `/swipe`, `/settings`, `/roommates`, `/sublets`, `/create`
+- Redirect on auth failure: `/login?next=<intended-path>`
 
 ## Access Control
 
@@ -149,13 +151,13 @@ src/
 - Headline: "Student Housing, Done Right."
 - Subhead: "Verified apartments, sublets, and roommates — built for students."
 - Trust badge: "Built for students · @tulane.edu login required"
+- Logged-out hero includes a "Log in with your student email" CTA button
 
 ### Auth Behavior
-- If NOT logged in:
-  - Show hero only
-  - Hide listings, filters, and map
-- If logged in:
-  - Show full listings + filters
+- `isAuthenticated: boolean | null` — null = checking, false = logged out, true = logged in
+- If null: skeleton/loading state
+- If NOT logged in: show hero + access-gated card + platform feature previews (no listings)
+- If logged in: show hero + filter bar + full listings grid
 
 ### Listings Grid
 - Fully integrated into homepage
@@ -167,27 +169,26 @@ src/
 - Empty: show CTA ("No listings found — adjust filters")
 - Error: retry button
 
-### Filters (Primary Discovery System)
-- Must use URL search params
+### Filter System (URL-param based)
+- Filter state lives in URL search params — `useSearchParams()` is the source of truth
+- `page.tsx` reads params and passes them into the Supabase query (server-filtered, not client-filtered)
+- `HomeClient.tsx` → `FilterBar` component handles toggling params via `router.push`
+- No re-render-on-keystroke; filter change = full re-fetch from Supabase
 
-#### Required Filters
-- price_min
-- price_max
-- beds
-- baths
-- furnished
-- pets
-- sublet
-- available_from
+#### Active filters (all optional, URL params)
+| Param | Type | Applied as |
+|---|---|---|
+| `furnished` | `'true'` | `.eq('furnished', true)` |
+| `pets` | `'true'` | `.eq('pets', true)` |
+| `sublet` | `'true'` | `.eq('is_sublease', true)` |
+| `beds` | `'1'|'2'|'3'` | `.gte('beds', N)` |
+| `price_max` | `'1000'|'1500'|'2000'` | `.lte('rent', N)` |
+| `sort` | `'price_asc'|'price_desc'` | `.order('rent', ...)` |
 
-### Query Rules
-- Filters MUST be applied server-side
-- NEVER fetch full listings table
-- ALWAYS use `.limit()`
-
-### UI Rules
-- Remove all decorative/vibe-based icons
-- Remove any non-functional UI elements
+#### Query Rules
+- NEVER fetch full listings table — always `.range()` with PAGE_SIZE=40
+- Filters applied inside Supabase query, not post-fetch
+- "Clear all" pill removes all filter params at once
 
 ---
 

@@ -54,8 +54,7 @@ export function ListingDetailPage() {
         } catch {
           // no-op — profile is optional
         }
-      } catch (err) {
-        console.error('[ListingDetail] fetch error:', err)
+      } catch {
         setNotFound(true)
       } finally {
         setLoading(false)
