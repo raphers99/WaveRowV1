@@ -46,11 +46,12 @@ function LoginPageInner() {
   // --- OTP flow (student / subletter) ---
   async function handleSendCode() {
     if (!role) { setError('Please select your role.'); return }
-    if (!email) { setError('Please enter your email.'); return }
-    if (!email.endsWith('@tulane.edu')) { setError('Please use your Tulane email.'); return }
+    const cleanedEmail = email.trim().toLowerCase()
+    if (!cleanedEmail) { setError('Please enter your email.'); return }
+    if (role !== 'landlord' && !cleanedEmail.endsWith('@tulane.edu')) { setError('Please use your Tulane email.'); return }
     setLoading(true); setError('')
     const { error: e } = await getSupabase().auth.signInWithOtp({
-      email,
+      email: cleanedEmail,
       options: { data: { role }, shouldCreateUser: true },
     })
     setLoading(false)
@@ -63,7 +64,8 @@ function LoginPageInner() {
     if (token.length < 6) { setError('Enter the full 6-digit code.'); return }
     setLoading(true); setError('')
     const supabase = getSupabase()
-    const { data, error: e } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+    const cleanedEmail = email.trim().toLowerCase()
+    const { data, error: e } = await supabase.auth.verifyOtp({ email: cleanedEmail, token, type: 'email' })
     if (e) { setError('Invalid code. Please try again.'); setLoading(false); return }
     if (data.user) {
       // Check if the user already has a profile to avoid overwriting their name
@@ -97,17 +99,18 @@ function LoginPageInner() {
 
   // --- Password flow (landlord) ---
   async function handleLandlordAuth() {
-    if (!email) { setError('Please enter your email.'); return }
+    const cleanedEmail = email.trim().toLowerCase()
+    if (!cleanedEmail) { setError('Please enter your email.'); return }
     if (!password) { setError('Please enter your password.'); return }
     setLoading(true); setError('')
     const supabase = getSupabase()
     if (landlordTab === 'signin') {
-      const { error: e } = await supabase.auth.signInWithPassword({ email, password })
+      const { error: e } = await supabase.auth.signInWithPassword({ email: cleanedEmail, password })
       setLoading(false)
       if (e) { setError(e.message); return }
       router.replace(nextPath)
     } else {
-      const { data, error: e } = await supabase.auth.signUp({ email, password, options: { data: { role: 'landlord' } } })
+      const { data, error: e } = await supabase.auth.signUp({ email: cleanedEmail, password, options: { data: { role: 'landlord' } } })
       setLoading(false)
       if (e) { setError(e.message); return }
       if (data.user) {
@@ -293,10 +296,10 @@ function LoginPageInner() {
                     <input
                       ref={emailRef}
                       className="input"
-                      type="text"
+                      type="email"
                       inputMode="email"
                       value={email}
-                      onChange={e => { setEmail(e.target.value); setError('') }}
+                      onChange={e => { setEmail(e.target.value.trim().toLowerCase()); setError('') }}
                       placeholder={role === 'landlord' ? 'you@email.com' : 'you@tulane.edu'}
                       autoComplete="off"
                       autoCapitalize="none"
