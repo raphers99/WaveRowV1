@@ -35,7 +35,7 @@ export function BottomNav() {
       borderTop: '0.5px solid rgba(0,103,71,0.1)',
       paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, position: 'relative', padding: '0 12px' }}>
+      <div style={{ maxWidth: 440, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, position: 'relative', padding: '0 16px' }}>
         {/* Left tabs */}
         <div style={{ display: 'flex', flex: 0.42, justifyContent: 'space-between', paddingLeft: 8 }}>
           {TABS.filter(tab => !tab.isPlus).slice(0, 2).map(tab => {
