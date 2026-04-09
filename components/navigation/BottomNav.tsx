@@ -35,59 +35,40 @@ export function BottomNav() {
       borderTop: '0.5px solid rgba(0,103,71,0.1)',
       paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
-      <div style={{ maxWidth: 440, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64, position: 'relative', padding: '0 16px' }}>
-        {/* Left tabs */}
-        <div style={{ display: 'flex', flex: 0.42, justifyContent: 'space-between', paddingLeft: 8 }}>
-          {TABS.filter(tab => !tab.isPlus).slice(0, 2).map(tab => {
-            const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
-            const Icon = tab.icon
+      <div style={{ maxWidth: 500, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', height: 64, alignItems: 'center' }}>
+        {TABS.map(tab => {
+          const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
+          const Icon = tab.icon
+
+          if (tab.isPlus) {
             return (
-              <div key={tab.href} onClick={triggerHaptic}>
-                <NavItem
-                  href={tab.href}
-                  icon={<Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} color={isActive ? 'var(--olive)' : '#9ca3af'} />}
-                  label={tab.label}
-                  isActive={isActive}
-                />
+              <div key={tab.href} style={{ display: 'flex', justifyContent: 'center' }}>
+                <Link href={tab.href} onClick={triggerHaptic} style={{ textDecoration: 'none', outline: 'none', WebkitTapHighlightColor: 'transparent' }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: 16,
+                    background: 'linear-gradient(145deg, var(--olive), var(--olive-dark))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 4px 16px rgba(0,103,71,0.35)',
+                    position: 'relative', top: -2
+                  }}>
+                    <Icon size={26} color="white" strokeWidth={2.5} />
+                  </div>
+                </Link>
               </div>
             )
-          })}
-        </div>
-        {/* Centered Plus button */}
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 2 }}>
-          {TABS.filter(tab => tab.isPlus).map(tab => {
-            const Icon = tab.icon
-            return (
-              <Link key={tab.href} href={tab.href} onClick={triggerHaptic} style={{ textDecoration: 'none', outline: 'none', WebkitTapHighlightColor: 'transparent' }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: 16,
-                  background: 'linear-gradient(145deg, var(--olive), var(--olive-dark))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 16px rgba(0,103,71,0.35)',
-                }}>
-                  <Icon size={26} color="white" strokeWidth={2.5} />
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-        {/* Right tabs */}
-        <div style={{ display: 'flex', flex: 0.42, justifyContent: 'space-between', paddingRight: 8 }}>
-          {TABS.filter(tab => !tab.isPlus).slice(2).map(tab => {
-            const isActive = pathname.startsWith(tab.href)
-            const Icon = tab.icon
-            return (
-              <div key={tab.href} onClick={triggerHaptic}>
-                <NavItem
-                  href={tab.href}
-                  icon={<Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} color={isActive ? 'var(--olive)' : '#9ca3af'} />}
-                  label={tab.label}
-                  isActive={isActive}
-                />
-              </div>
-            )
-          })}
-        </div>
+          }
+
+          return (
+            <div key={tab.href} onClick={triggerHaptic} style={{ display: 'flex', justifyContent: 'center' }}>
+              <NavItem
+                href={tab.href}
+                icon={<Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} color={isActive ? 'var(--olive)' : '#9ca3af'} />}
+                label={tab.label}
+                isActive={isActive}
+              />
+            </div>
+          )
+        })}
       </div>
     </nav>
   )
