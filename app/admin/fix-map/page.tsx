@@ -20,7 +20,7 @@ export default function AdminFixMapPage() {
     }
 
     setLoading(true)
-    setLogs(['Starting Mass Geocoding Operations...'])
+    setLogs([`Starting Mass Geocoding Operations... (API Key: ${API_KEY ? API_KEY.slice(0,8) + '...' : 'MISSING'})`])
     
     try {
       const supabase = createClient()
@@ -59,10 +59,12 @@ export default function AdminFixMapPage() {
           ? address 
           : `${address}, New Orleans, LA`
 
+        addLog(`  → Query: "${searchQuery}"`)
         const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=${API_KEY}`)
         const mapData = await res.json()
+        addLog(`  → Google Status: ${mapData.status}${mapData.error_message ? ' — ' + mapData.error_message : ''}`)
 
-        if (mapData.results && mapData.results.length > 0) {
+        if (mapData.status === 'OK' && mapData.results && mapData.results.length > 0) {
           const lat = mapData.results[0].geometry.location.lat
           const lng = mapData.results[0].geometry.location.lng
 
@@ -72,13 +74,18 @@ export default function AdminFixMapPage() {
             .eq('id', item.id)
 
           if (updateErr) {
-            addLog(`❌ Supabase Sync Failed: ${updateErr.message}`)
+            addLog(`  ❌ Supabase Sync Failed: ${updateErr.message}`)
           } else {
-            addLog(`✅ Recalibrated System Coordinates [${lat.toFixed(4)}, ${lng.toFixed(4)}] for [${item.title ?? address}]`)
+            addLog(`  ✅ Fixed → [${lat.toFixed(5)}, ${lng.toFixed(5)}] for "${item.title ?? address}"`)
             fixedCount++
           }
+        } else if (mapData.status === 'ZERO_RESULTS') {
+          addLog(`  ⚠️ Address too vague — try adding a street name`)
+        } else if (mapData.status === 'REQUEST_DENIED') {
+          addLog(`  ❌ REQUEST_DENIED — Geocoding API is NOT enabled for this key. Enable it at: https://console.cloud.google.com/apis/library/geocoding-backend.googleapis.com`)
+          break // No point continuing — all will fail
         } else {
-          addLog(`❌ Google Geocoding Rejected Accuracy: ${address}`)
+          addLog(`  ❌ Failed: ${mapData.status}`)
         }
         
         // Throttling for Geocoding API compliance
