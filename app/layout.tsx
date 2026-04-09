@@ -10,8 +10,8 @@ const playfair = Playfair_Display({ variable: '--font-playfair', subsets: ['lati
 const dmSans = DM_Sans({ variable: '--font-dm-sans', subsets: ['latin'], display: 'swap', weight: ['400','500','600','700'] })
 
 export const metadata: Metadata = {
-  title: 'WaveRow — Student Housing',
-  description: 'Bridging the gap between students and landlords.',
+  title: 'WaveRow | Tulane Student Housing, Sublets & Roommates in New Orleans',
+  description: 'WaveRow is a student housing marketplace for Tulane University — find sublets, semester leases, and roommates in New Orleans.',
   manifest: '/site.webmanifest',
   appleWebApp: {
     capable: true,

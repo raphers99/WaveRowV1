@@ -34,7 +34,6 @@ function GlobalFooter() {
         {/* Nav links */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', marginBottom: 32 }}>
           {[
-            { label: 'About', href: '/' },
             { label: 'Listings', href: '/' },
             { label: 'Messages', href: '/messages' },
             { label: 'Privacy Policy', href: '/privacy' },

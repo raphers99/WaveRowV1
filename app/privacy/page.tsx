@@ -14,7 +14,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 40px' }}>
-          Last updated: June 2025
+          Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
             },
             {
               title: 'Contact',
-              body: 'For privacy questions or data requests, contact us at privacy@waverow.com.',
+              body: 'For privacy questions or data requests, contact us at privacy@waverow.app.',
             },
           ].map(({ title, body }) => (
             <div key={title}>
