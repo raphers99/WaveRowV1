@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WaveRow
+
+**The student housing platform for New Orleans.** WaveRow connects Tulane, Loyola, and local university students with landlords and subletters in the surrounding neighborhoods.
+
+🌐 **Live:** [wave-row-v1.vercel.app](https://wave-row-v1.vercel.app)  
+📱 **iOS:** Capacitor wrapper (WKWebView)  
+🗄️ **Backend:** Supabase (auth, database, storage, realtime)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js (App Router, static export) |
+| Language | TypeScript (strict) |
+| Styling | Vanilla CSS (design tokens) |
+| Backend | Supabase (PostgreSQL + RLS) |
+| Auth | Supabase OTP (magic link / phone) |
+| Storage | Supabase Storage (`listing-images` bucket) |
+| Maps | Google Maps JavaScript API + Static Maps API |
+| Geocoding | Google Geocoding API |
+| Analytics | Amplitude |
+| Mobile | Capacitor (iOS) |
+| Hosting | Vercel |
+
+---
+
+## Features
+
+- 🏠 **Listings** — Create, browse, filter, edit, and delete property listings
+- 🗺️ **Map View** — Interactive map with price-pill markers, viewport-bounded queries
+- 💬 **Messaging** — E2EE encrypted direct messages between students and landlords (AES-GCM via WebCrypto)
+- 🤝 **Roommates** — Roommate discovery and matching
+- 🔄 **Swipe** — Tinder-style listing discovery
+- ❤️ **Saved Listings** — Bookmark listings for later
+- 👤 **Profiles** — Student and landlord profiles with verification status
+- 📊 **Dashboard** — Manage your own listings
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+
+- A Supabase project
+- A Google Cloud project with these APIs enabled:
+  - Maps JavaScript API
+  - Maps Static API
+  - Geocoding API
+
+### Environment Variables
+
+Create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+NEXT_PUBLIC_AMPLITUDE_API_KEY=your_amplitude_key   # optional
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Database Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run `schema.sql` in your Supabase SQL Editor to create all tables, RLS policies, storage buckets, and triggers.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Run Locally
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Admin Tools
 
-## Deploy on Vercel
+### Fix Map Coordinates
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If listings have incorrect or missing GPS coordinates, navigate to:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+/admin/fix-map
+```
+
+This page re-geocodes all listings owned by the logged-in user using the Google Geocoding API and updates `lat`/`lng` in the database.
+
+---
+
+## Project Structure
+
+```
+app/
+├── page.tsx              # Homepage
+├── listing/              # Listing detail + edit
+├── listings/new/         # Create listing
+├── map/                  # Interactive map
+├── messages/             # Messaging inbox + threads
+├── roommates/            # Roommate discovery
+├── dashboard/            # User dashboard
+├── settings/             # Profile settings
+├── admin/fix-map/        # Admin geocoding tool
+components/
+├── listing/              # ListingCard, etc.
+├── messages/             # MessageThread, MessageBubble
+├── navigation/           # Navbar, BottomNav
+lib/
+├── supabase/             # Supabase client helpers
+├── api.ts                # Shared API functions
+├── analytics.ts          # Amplitude + Sentry wrapper
+```
+
+---
+
+## Deployment
+
+The app is deployed on **Vercel** with automatic deployments from the `main` branch.
+
+Required Vercel environment variables:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+
+---
+
+## Architecture Notes
+
+- **Static Export:** The app uses `output: 'export'` for Capacitor iOS compatibility. This means no server actions or middleware — all auth is client-side via localStorage.
+- **RLS:** All Supabase tables enforce Row Level Security. Mutations use `SECURITY DEFINER` RPC functions where needed.
+- **E2EE Messaging:** Messages are encrypted client-side with AES-GCM (PBKDF2-derived key from conversation ID) before being stored in Supabase.
+- **Map:** Viewport-bounded queries only — the map fetches listings within the current `getBounds()` rectangle on every `idle` event.

@@ -1,53 +1,111 @@
-# WaveRow — Fix Execution Plan
+# WaveRow — Product Roadmap & Status
 
-This document outlines the execution plan to address the critical issues identified in the codebase. The tasks are prioritized into three categories: P0 for critical, must-fix issues; P1 for high-impact improvements; and P2 for larger structural changes.
-
----
-
-## P0: Critical Issues (Fix Immediately)
-
-These issues represent critical bugs, security vulnerabilities, or major data integrity problems. They must be addressed before any new feature work.
-
-- **[#1] Fix Settings Profile Section:** The profile settings UI is currently unreachable. (DONE)
-- **[#3] Implement True Account Deletion:** The current "delete" function is misleading and does not fully remove user data. This is a potential privacy/legal risk. (DONE - Mitigated)
-- **[#5, #6] Resolve Schema Drift:** The `profiles.preferences` column is missing, and the `conversations` table is not part of the base schema, leading to runtime failures. (DONE)
-- **[#7, #8] Fix Messaging Reliability:** Address optimistic UI failures and ensure conversation metadata is updated correctly. (DONE)
-- **[#12] Remove Silent Error Catches:** Eliminate `catch(() => {})` blocks in core user flows to prevent hiding bugs. (DONE)
-- **[#13] Enforce Consistent Server-Side Auth:** Secure all protected routes uniformly on the server-side. (DONE)
-- **[#9, #10] Fix False-Success on Save/Favorite:** Ensure the UI for saving/favoriting listings reflects the true backend state and handles failures. (DONE)
-- **[#24] Move Critical Mutations to Server:** Migrate key operations like account deletion and listing creation to server actions or route handlers for better security and validation. (DONE - Mitigated by securing routes)
-- **[#15] Optimize Database Queries:** Replace `select('*')` with specific column selections in high-traffic queries. (DONE)
-- **[#29] Fix Profile Name/Bio Save:** Profile updates were silently failing because `@supabase/ssr` cookie-based auth doesn't work with `output:'export'` (no middleware to refresh tokens). Fixed by switching to `@supabase/supabase-js` (localStorage auth) and using `SECURITY DEFINER` RPC functions (`update_profile_name`, `update_profile_bio`) to bypass RLS. (DONE)
-- **[#30] Fix Login Overwriting Profile Name:** `profiles.upsert()` on every OTP/landlord login was resetting the user's name to `email.split('@')[0]`. Now checks if profile exists first — only inserts for new users. (DONE)
+Last updated: April 2026
 
 ---
 
-## P1: High-Impact Improvements (Quick Wins)
+## ✅ Completed
 
-These are high-value fixes that are relatively low-effort and will provide immediate improvements to the user experience and developer workflow.
+### Core Infrastructure
+- [x] Next.js App Router with static export (`output: 'export'`) for Capacitor iOS compatibility
+- [x] Supabase integration (auth, database, realtime, storage)
+- [x] Full schema with RLS policies — `schema.sql`
+- [x] Supabase Storage bucket (`listing-images`) with public read + owner write policies
+- [x] Auto-create profile on signup via PostgreSQL trigger
+- [x] Amplitude analytics + Sentry error tracking wrapper
 
-- **[#2] Wire Dead Legal Links:** Connect the Privacy Policy and Terms of Service links in the settings page. (DONE)
-- **[#19] Add Map Empty State:** Provide a clear message on the map when no listings are found. (DONE)
-- **[#20] Re-enable Mobile Zoom:** Remove viewport restrictions to improve accessibility. (DONE)
-- **[#21] Fix Photo Upload Memory Leak:** Revoke `URL.createObjectURL` to prevent memory leaks. (DONE)
-- **[#15] Optimize Database Queries:** Replace `select('*')` with specific column selections in high-traffic queries. (DONE)
-- **[#14] Standardize Supabase Client:** Use the shared `createClient()` wrapper everywhere. (DONE — switched from `@supabase/ssr` to `@supabase/supabase-js` for static export compatibility)
-- **[#31] Fix Map Geocoding Errors:** Removed Geocoding API dependency (not enabled in GCP). Map now only shows listings with stored `lat`/`lng` coordinates. (DONE)
-- **[#32] Fix Analytics Console Errors:** Silenced `analytics_events` 400 errors; table created via `schema_analytics.sql`. (DONE)
+### Auth
+- [x] OTP magic link login (email)
+- [x] Session persistence via localStorage (compatible with static export)
+- [x] Profile auto-creation on first login
+- [x] Fixed: Login was overwriting existing profile names — now checks before insert
+
+### Listings
+- [x] Create listing with photo upload, address, price, beds/baths, amenities
+- [x] Geocoding on listing creation (address → lat/lng via Google Geocoding API)
+- [x] Browse listings with filter support
+- [x] Listing detail page (query-based routing `/listing?id=...`)
+- [x] Edit listing (owner-only, pre-populated form)
+- [x] Delete listing (owner-only with confirmation)
+- [x] Save/unsave listings (favorites)
+- [x] Fixed: Static routing migration from `/listings/[id]` dynamic routes to `/listing?id=...`
+
+### Map
+- [x] Interactive Google Maps with price-pill markers (OverlayView)
+- [x] Viewport-bounded queries (fetches only listings within current map bounds)
+- [x] Marker deduplication on pan (old markers cleared before re-rendering)
+- [x] Listing popup card with "View Listing" CTA
+- [x] Static map image on listing detail page (Maps Static API)
+- [x] Admin geocoding resync tool at `/admin/fix-map`
+- [x] Google Maps API configured: Maps JavaScript API, Maps Static API, Geocoding API
+
+### Messaging
+- [x] Conversation inbox
+- [x] Real-time message threads via Supabase Realtime
+- [x] Optimistic UI with retry on failure
+- [x] E2EE encryption: AES-GCM via WebCrypto API (PBKDF2-derived key per conversation)
+- [x] Graceful fallback for legacy plaintext messages
+
+### Profiles & Settings
+- [x] Profile view with name, bio, role, avatar
+- [x] Profile settings page (edit name, bio)
+- [x] Fixed: Profile updates via `SECURITY DEFINER` RPC functions (required for static export)
+- [x] Landlord vs Student role display
+
+### UI/UX
+- [x] Bottom navigation bar
+- [x] Navbar with auth state
+- [x] Toast notification system
+- [x] Loading skeletons
+- [x] Empty states with CTAs
+- [x] Error boundaries
+- [x] Mobile-responsive layouts
+- [x] Safe area insets for iOS notch/home indicator
+
+### DevOps
+- [x] Deployed on Vercel (auto-deploy from `main` branch)
+- [x] GitHub repository: `raphers99/WaveRowV1`
+- [x] Environment variables configured in Vercel dashboard
 
 ---
 
-## P2: Structural Improvements (Long-Term Health)
+## 🚧 In Progress / Known Issues
 
-These are larger, more foundational changes that will improve the long-term health, scalability, and maintainability of the codebase.
+- [ ] **API key restrictions:** Confirm the Google Maps API key has no HTTP referrer restrictions that would block Capacitor iOS requests (should allow `capacitor://localhost/*`)
+- [ ] **Listing `"1231"` address:** One test listing has an incomplete address (just a street number). Needs to be corrected in Supabase directly.
 
-- **[New] Introduce a Formal Migration Pipeline:** Unify schema management into a single source of truth.
-- **[New] Create a Domain Data Layer:** Abstract database queries and mutations into a typed data layer.
-- **[New] Establish a Consistent Mutation Architecture:** Standardize mutations via Supabase RPC functions (`SECURITY DEFINER`) since `output:'export'` prevents server actions/route handlers.
-- **[New] Implement a Consistent Async State Contract:** Standardize loading, empty, and error states across the app.
-- **[New] Build a Reliability Layer for Optimistic UI:** Create a robust system for optimistic updates with status tracking and rollback.
-- **[#28] Add Baseline Automated Tests:** Introduce testing for critical user flows like auth, messaging, and listings.
-- **[#16, #17] Improve Map and Swipe Performance:** Implement viewport-bounded queries for the map and cursor-based pagination for the swipe deck.
-- **[#22, #23] Strengthen Data Validation and Normalization:** Add robust validation and normalize roles throughout the stack.
-- **[#4, #25, #26, #27] Address Dead/Underused Code:** Prune or implement underused features and fix inconsistencies.
-- **[#11, #18] Improve UI Feedback and Resource Management:** Ensure review submission provides clear feedback and map resources are cleaned up properly.
+---
+
+## 🔮 Planned Features
+
+### P1 — High Priority
+- [ ] **Push notifications** (Capacitor + APNs) for new messages
+- [ ] **Image management on edit** — Delete old photos from storage when listing is updated
+- [ ] **Verified landlord badge** — Display verification status prominently on listings
+- [ ] **Listing search** — Full-text search by address, neighborhood, or description
+
+### P2 — Medium Priority
+- [ ] **Roommate matching algorithm** — Score and rank roommate profiles
+- [ ] **Swipe deck pagination** — Cursor-based pagination instead of full load
+- [ ] **Review system** — Allow students to rate landlords after a lease
+- [ ] **Sublets** — Enhanced sublet listing flow with lease dates
+- [ ] **Neighborhood guides** — Static content pages per neighborhood
+
+### P3 — Long Term
+- [ ] **Automated testing** — E2E tests for auth, listing CRUD, and messaging flows
+- [ ] **Server-side rendering** — Migrate away from static export if iOS moves to a native bridge
+- [ ] **Native iOS features** — Camera access for photo upload, location services for nearby listings
+- [ ] **Admin dashboard** — Moderation tools for flagged listings and users
+
+---
+
+## Architecture Decisions
+
+| Decision | Rationale |
+|---|---|
+| `output: 'export'` (static) | Required for Capacitor iOS — no Node.js server in the wrapper |
+| localStorage auth | `@supabase/ssr` cookie auth incompatible with static export |
+| Query-based routing (`?id=`) | Dynamic routes (`/listing/[id]`) cause 404s on Vercel static export |
+| WebCrypto AES-GCM E2EE | Native browser API, no external dependency, works in Capacitor |
+| RPC `SECURITY DEFINER` functions | Required for mutations that bypass RLS in static export context |
+| Viewport-bounded map queries | Prevents full table scans as listing count scales |
