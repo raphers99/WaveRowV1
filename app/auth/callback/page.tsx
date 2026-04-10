@@ -18,9 +18,8 @@ function AuthCallbackInner() {
     }
 
     const supabase = createClient()
-    
-    // Process the OAuth payload strictly inside the browser environment for static export compatibility
-    supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+
+    supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
       if (error || !data.user) {
         router.replace('/login?error=auth')
         return
@@ -28,12 +27,28 @@ function AuthCallbackInner() {
 
       const email = data.user.email ?? ''
 
-      // Execute explicit client-side domain rejection
       if (!email.endsWith('@tulane.edu')) {
-        supabase.auth.signOut().then(() => {
-          router.replace('/login?error=not_tulane')
-        })
+        await supabase.auth.signOut()
+        router.replace('/login?error=not_tulane')
         return
+      }
+
+      // Ensure profile row exists for this user (safe for both new and returning)
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+
+      if (!existing) {
+        await supabase.from('profiles').insert({
+          user_id: data.user.id,
+          name: data.user.user_metadata?.full_name ?? email.split('@')[0],
+          role: 'student',
+          verified: true,
+          verification_status: 'verified',
+          verification_type: 'student',
+        })
       }
 
       router.replace(next)
