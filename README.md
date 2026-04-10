@@ -2,7 +2,7 @@
 
 **The student housing platform for New Orleans.** WaveRow connects Tulane, Loyola, and local university students with landlords and subletters in the surrounding neighborhoods.
 
-🌐 **Live:** [wave-row-v1.vercel.app](https://wave-row-v1.vercel.app)  
+🌐 **Live:** [waverow.app](https://waverow.app)  
 📱 **iOS:** Capacitor wrapper (WKWebView)  
 🗄️ **Backend:** Supabase (auth, database, storage, realtime)
 
@@ -16,7 +16,7 @@
 | Language | TypeScript (strict) |
 | Styling | Vanilla CSS (design tokens) |
 | Backend | Supabase (PostgreSQL + RLS) |
-| Auth | Supabase OTP (magic link / phone) |
+| Auth | Supabase Google OAuth (@tulane.edu only) |
 | Storage | Supabase Storage (`listing-images` bucket) |
 | Maps | Google Maps JavaScript API + Static Maps API |
 | Geocoding | Google Geocoding API |

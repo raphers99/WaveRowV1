@@ -64,12 +64,16 @@ src/
 
 ## Auth
 
-- Method: 6-digit OTP via Supabase
-- Always use `verifyOtp` with `type: 'email'`
-- OTP handler: `/auth/callback`
+- Method: Google OAuth via Supabase (`signInWithOAuth({ provider: 'google' })`)
+- Domain enforcement: @tulane.edu only — enforced in `/auth/callback/page.tsx` after `exchangeCodeForSession`
+- Non-Tulane accounts are signed out and redirected to `/login?error=not_tulane`
+- OAuth callback: `/auth/callback` (client page, NOT a route handler — static export incompatible with route handlers)
+- New users get a profile row created automatically in the callback (role defaults to `student`)
 - Proxy middleware: `proxy.ts` (Next.js 16 convention — NOT `middleware.ts`)
 - Protected routes enforced in `proxy.ts`: `/dashboard`, `/messages`, `/listings/new`, `/map`, `/swipe`, `/settings`, `/roommates`, `/sublets`, `/create`
 - Redirect on auth failure: `/login?next=<intended-path>`
+- Production URL: https://waverow.app
+- Supabase redirect URL allowlist must include: `https://waverow.app/auth/callback`
 
 ## Access Control
 
@@ -252,7 +256,8 @@ src/
 ## Deployment
 
 - Web: Vercel, auto-deploy via GitHub — pushing to `main` triggers a Vercel production deployment automatically. No manual deploy step needed.
-- Mobile: Expo, bundle ID com.waverow.app — requires rebuild or OTA for updates
+- Mobile: Capacitor iOS, bundle ID com.waverow.app — web changes apply after `npx cap sync ios`
+- Production domain: https://waverow.app
 - Env vars required: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 ### Deploy Workflow
