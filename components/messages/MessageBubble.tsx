@@ -3,6 +3,18 @@ import type { Message } from '@/types'
 
 type OptimisticMessage = Message & { status?: 'pending' | 'failed' }
 
+function displayBody(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && 'iv' in parsed && 'cipher' in parsed) {
+      return '🔒 Encrypted message'
+    }
+  } catch {
+    // plain text
+  }
+  return raw
+}
+
 export function MessageBubble({ message, isOwn, onRetry }: { message: OptimisticMessage; isOwn: boolean; onRetry: () => void }) {
   const time = new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const isOptimistic = !!message.status
@@ -18,7 +30,7 @@ export function MessageBubble({ message, isOwn, onRetry }: { message: Optimistic
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         border: isOwn ? 'none' : '1px solid rgba(0,103,71,0.08)',
       }}>
-        <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.5 }}>{message.body}</p>
+        <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.5 }}>{displayBody(message.body)}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
           {message.status === 'failed' && (
             <>

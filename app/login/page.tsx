@@ -31,14 +31,22 @@ function LoginPageInner() {
     setLoading(false)
   }
 
-  async function handleGoogleSignIn() {
+  async function handleMicrosoftSignIn() {
+    setLoading(true)
+    setFormError('')
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
+    const { error: e } = await supabase.auth.signInWithOAuth({
+      provider: 'azure',
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        scopes: 'email',
       },
     })
+    if (e) {
+      setFormError(e.message)
+      setLoading(false)
+    }
+    // On success the browser redirects — no need to setLoading(false)
   }
 
   async function handleLandlordAuth() {
@@ -105,10 +113,12 @@ function LoginPageInner() {
           {mode === 'pick' && (
             <motion.div key="pick" variants={fadeUp} initial="hidden" animate="visible" exit={{ opacity: 0, y: -8 }}>
 
-              {(error === 'not_tulane' || error === 'auth') && (
+              {(error === 'not_tulane' || error === 'auth' || formError) && (
                 <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
                   <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#dc2626', margin: 0, textAlign: 'center' }}>
-                    {error === 'not_tulane' ? 'Only @tulane.edu accounts can access WaveRow.' : 'Sign in failed. Please try again.'}
+                    {error === 'not_tulane'
+                      ? 'Only @tulane.edu accounts can access WaveRow.'
+                      : formError || 'Sign in failed. Please try again.'}
                   </p>
                 </div>
               )}
@@ -116,20 +126,19 @@ function LoginPageInner() {
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', marginBottom: 16, textAlign: 'center' }}>Who are you?</p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {/* Student — Google */}
-                <motion.button whileTap={{ scale: 0.98 }} onClick={handleGoogleSignIn}
-                  style={{ padding: '20px', borderRadius: 16, border: '2px solid rgba(0,103,71,0.15)', background: 'white', cursor: 'pointer', textAlign: 'left' }}>
+                {/* Student — Microsoft */}
+                <motion.button whileTap={{ scale: loading ? 1 : 0.98 }} onClick={handleMicrosoftSignIn} disabled={loading}
+                  style={{ padding: '20px', borderRadius: 16, border: '2px solid rgba(0,103,71,0.15)', background: 'white', cursor: loading ? 'not-allowed' : 'pointer', textAlign: 'left', opacity: loading ? 0.7 : 1 }}>
                   <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', margin: '0 0 4px' }}>Student</p>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '0 0 14px' }}>Sign in with your @tulane.edu Google account</p>
+                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '0 0 14px' }}>Sign in with your @tulane.edu Microsoft account</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '11px 16px', background: 'white', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                    <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                      <path fill="none" d="M0 0h48v48H0z"/>
+                    <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                      <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                      <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                      <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
                     </svg>
-                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>Continue with Google</span>
+                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>{loading ? 'Redirecting…' : 'Continue with Microsoft'}</span>
                   </div>
                 </motion.button>
 

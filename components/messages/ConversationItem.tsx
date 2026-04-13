@@ -2,6 +2,19 @@
 import { motion } from 'framer-motion'
 import type { Conversation } from '@/types'
 
+function previewText(raw: string | null | undefined): string {
+  if (!raw) return 'No messages yet'
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && 'iv' in parsed && 'cipher' in parsed) {
+      return 'Message'
+    }
+  } catch {
+    // not JSON — plain text, fall through
+  }
+  return raw
+}
+
 export function ConversationItem({
   conversation,
   currentUserId,
@@ -51,7 +64,7 @@ export function ConversationItem({
           <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{time}</span>
         </div>
         <p style={{ margin: 0, fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {conversation.last_message ?? 'No messages yet'}
+          {previewText(conversation.last_message)}
         </p>
       </div>
     </motion.div>
