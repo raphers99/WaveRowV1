@@ -30,6 +30,9 @@ export type SavedListing = { id: string; user_id: string; listing_id: string; cr
 export type Conversation = {
   id: string; listing_id: string | null; participant_one: string; participant_two: string;
   last_message: string | null; last_message_at: string | null; created_at: string;
+  // Enriched fields joined in fetchConversations
+  other_user_name?: string | null;
+  listing_title?: string | null;
 }
 
 export type Message = {

@@ -80,7 +80,35 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
     .or(`participant_one.eq.${userId},participant_two.eq.${userId}`)
     .order('last_message_at', { ascending: false })
   if (error) throw error
-  return (data ?? []) as Conversation[]
+  const convos = (data ?? []) as Conversation[]
+  if (convos.length === 0) return convos
+
+  // Collect the other participant's user_id for each conversation
+  const otherUserIds = [...new Set(
+    convos.map(c => c.participant_one === userId ? c.participant_two : c.participant_one)
+  )]
+  const listingIds = [...new Set(convos.map(c => c.listing_id).filter(Boolean))] as string[]
+
+  // Parallel fetch names + listing titles
+  const [profilesRes, listingsRes] = await Promise.all([
+    supabase.from('profiles').select('user_id, name').in('user_id', otherUserIds),
+    listingIds.length > 0
+      ? supabase.from('listings').select('id, title').in('id', listingIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const nameMap = Object.fromEntries(
+    (profilesRes.data ?? []).map((p: { user_id: string; name: string }) => [p.user_id, p.name])
+  )
+  const titleMap = Object.fromEntries(
+    (listingsRes.data ?? []).map((l: { id: string; title: string | null }) => [l.id, l.title])
+  )
+
+  return convos.map(c => ({
+    ...c,
+    other_user_name: nameMap[c.participant_one === userId ? c.participant_two : c.participant_one] ?? null,
+    listing_title: c.listing_id ? (titleMap[c.listing_id] ?? null) : null,
+  }))
 }
 
 export async function fetchMessages(conversationId: string): Promise<Message[]> {

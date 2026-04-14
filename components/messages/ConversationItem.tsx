@@ -26,15 +26,20 @@ export function ConversationItem({
   isSelected: boolean
   onClick: () => void
 }) {
-  const otherParticipant = conversation.participant_one === currentUserId
-    ? conversation.participant_two
-    : conversation.participant_one
+  const displayName = conversation.other_user_name
+    || conversation.listing_title
+    || 'Continue Conversation'
+
+  const initials = displayName
+    .split(' ')
+    .map((w: string) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 
   const time = conversation.last_message_at
     ? new Date(conversation.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : ''
-
-  const initials = otherParticipant.slice(0, 2).toUpperCase()
 
   return (
     <motion.div
@@ -59,7 +64,7 @@ export function ConversationItem({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
           <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {otherParticipant.slice(0, 8)}...
+            {displayName}
           </span>
           <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{time}</span>
         </div>
