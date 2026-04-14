@@ -1,3 +1,4 @@
+/// <reference types="@types/google.maps" />
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
@@ -7,8 +8,9 @@ import { toast } from '@/components/ui'
 import type { Listing } from '@/types'
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-const CENTER = { lat: 29.9311, lng: -90.1175 }
-const ZOOM = 15
+// Tulane Uptown campus center (Freret St & McAlister Way)
+const CENTER = { lat: 29.9407, lng: -90.1203 }
+const ZOOM = 16
 
 // ─── Price formatting ────────────────────────────────────────────────────────
 
@@ -20,7 +22,7 @@ function formatPriceShort(rent: number): string {
   return `$${rent}`
 }
 
-// ─── PricePillMarker — OverlayView pill (no mapId required) ─────────────────
+// ─── PricePillMarker — OverlayView pill ──────────────────────────────────────
 
 function makePillMarkerClass(navigate: (path: string) => void) {
   return class PricePillMarker extends google.maps.OverlayView {
@@ -86,34 +88,28 @@ function makePillMarkerClass(navigate: (path: string) => void) {
         'display:none',
       ].join(';')
 
-      // Close btn
       const closeBtn = document.createElement('button')
       closeBtn.innerHTML = '&times;'
       closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:20px;line-height:1;color:#999;cursor:pointer;padding:0'
       closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.deactivate() })
 
-      // Title
       const title = document.createElement('div')
       title.textContent = this.listing.title ?? this.listing.address
       title.style.cssText = 'font-weight:700;font-size:15px;color:#111;margin-bottom:6px;line-height:1.3;padding-right:20px'
 
-      // Price
       const price = document.createElement('div')
       price.style.cssText = 'font-weight:700;font-size:18px;color:#006747;margin-bottom:4px'
       price.textContent = `$${this.listing.rent.toLocaleString()}/mo`
 
-      // Meta
       const meta = document.createElement('div')
       meta.textContent = `${this.listing.beds} bed · ${this.listing.baths} bath`
       meta.style.cssText = 'font-size:13px;color:#666;margin-bottom:12px'
 
-      // CTA
       const btn = document.createElement('button')
       btn.textContent = 'View Listing'
       btn.style.cssText = 'display:block;width:100%;background:#006747;color:#fff;border:none;text-align:center;padding:10px 0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer'
-      btn.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/listing?id=${this.listing.id}` })
+      btn.addEventListener('click', (e) => { e.stopPropagation(); navigate(`/listing?id=${this.listing.id}`) })
 
-      // Caret
       const caret = document.createElement('div')
       caret.style.cssText = 'position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:9px solid #fff;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.08))'
 
@@ -124,8 +120,8 @@ function makePillMarkerClass(navigate: (path: string) => void) {
       popup.appendChild(btn)
       popup.appendChild(caret)
 
-      google.maps.event.addDomListener(popup, 'mousedown', (e: Event) => e.stopPropagation())
-      google.maps.event.addDomListener(popup, 'click', (e: Event) => e.stopPropagation())
+      popup.addEventListener('mousedown', (e) => e.stopPropagation())
+      popup.addEventListener('click', (e) => e.stopPropagation())
 
       this.popupDiv = popup
       this.getPanes()!.floatPane.appendChild(popup)
@@ -163,6 +159,11 @@ function makePillMarkerClass(navigate: (path: string) => void) {
       if (this.popupDiv) this.popupDiv.style.display = 'none'
     }
 
+    detach() {
+      // Detach overlay from the map — uses setMap inherited from OverlayView
+      this.setMap(null)
+    }
+
     onRemove() {
       this.pillDiv?.parentNode?.removeChild(this.pillDiv)
       this.popupDiv?.parentNode?.removeChild(this.popupDiv)
@@ -174,6 +175,14 @@ function makePillMarkerClass(navigate: (path: string) => void) {
 
 type PillMarkerInstance = InstanceType<ReturnType<typeof makePillMarkerClass>>
 
+// ─── Captured Maps constructors (set once after API loads) ───────────────────
+// We capture these inside initMap (where google is guaranteed available) so
+// fetchAndRender can use them without directly referencing the global `google`.
+type MapsCtors = {
+  LatLng: typeof google.maps.LatLng
+  LatLngBounds: typeof google.maps.LatLngBounds
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function MapClient() {
@@ -182,43 +191,122 @@ export default function MapClient() {
   const mapInstance = useRef<google.maps.Map | null>(null)
   const activeMarker = useRef<PillMarkerInstance | null>(null)
   const PillMarkerClass = useRef<ReturnType<typeof makePillMarkerClass> | null>(null)
+  const placedMarkers = useRef<PillMarkerInstance[]>([])
+  const fetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mapsCtors = useRef<MapsCtors | null>(null)
+  const isInitialFetch = useRef(true)
 
   const [mapReady, setMapReady] = useState(false)
-  const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [mapError, setMapError] = useState<string | null>(null)
+  const [listingCount, setListingCount] = useState(0)
 
-  // Fetch listings
-  useEffect(() => {
-    createClient()
-      .from('listings')
-      .select('id, title, address, rent, beds, baths, lat, lng')
-      .eq('status', 'ACTIVE')
-      .limit(200)
-      .then(({ data, error }) => {
-        if (error) toast.show('Could not load map listings', 'error')
-        setListings((data ?? []) as Listing[])
-        setLoading(false)
-      })
+  const closeActive = useCallback(() => {
+    activeMarker.current?.deactivate()
+    activeMarker.current = null
   }, [])
 
-  // Load Google Maps (no extra libraries needed — OverlayView is in core)
+  // Fetch listings within current bounds and re-render markers
+  const fetchAndRender = useCallback(async () => {
+    const map = mapInstance.current
+    const Marker = PillMarkerClass.current
+    const ctors = mapsCtors.current
+    if (!map || !Marker || !ctors) return
+
+    const bounds = map.getBounds()
+    if (!bounds) return
+
+    const ne = bounds.getNorthEast()
+    const sw = bounds.getSouthWest()
+
+    setLoading(true)
+    try {
+      const { data, error } = await createClient()
+        .from('listings')
+        .select('id, title, address, rent, beds, baths, lat, lng')
+        .eq('status', 'ACTIVE')
+        .gte('lat', sw.lat())
+        .lte('lat', ne.lat())
+        .gte('lng', sw.lng())
+        .lte('lng', ne.lng())
+        .limit(200)
+
+      if (error) { toast.show('Could not load map listings', 'error'); return }
+
+      const listings = (data ?? []) as Listing[]
+
+      // Clear existing markers
+      placedMarkers.current.forEach(m => m.detach())
+      placedMarkers.current = []
+      closeActive()
+
+      const markerBounds = new ctors.LatLngBounds()
+      let hasCoords = false
+
+      function onActivate(marker: PillMarkerInstance) {
+        if (activeMarker.current && activeMarker.current !== marker) {
+          activeMarker.current.deactivate()
+        }
+        marker.activate()
+        activeMarker.current = marker
+      }
+
+      for (const listing of listings) {
+        if (listing.lat && listing.lng) {
+          const latLng = new ctors.LatLng(listing.lat, listing.lng)
+          const m = new Marker(latLng, listing, onActivate)
+          m.setMap(map)
+          placedMarkers.current.push(m)
+          markerBounds.extend(latLng)
+          hasCoords = true
+        }
+      }
+
+      // fitBounds on initial load when markers exist
+      if (hasCoords && isInitialFetch.current) {
+        map.fitBounds(markerBounds, { top: 80, bottom: 20, left: 20, right: 20 })
+        isInitialFetch.current = false
+      }
+
+      setListingCount(listings.length)
+    } finally {
+      setLoading(false)
+    }
+  }, [closeActive])
+
+  // Debounced idle handler
+  const onIdle = useCallback(() => {
+    if (fetchTimer.current) clearTimeout(fetchTimer.current)
+    fetchTimer.current = setTimeout(fetchAndRender, 400)
+  }, [fetchAndRender])
+
+  // Load Google Maps
   useEffect(() => {
     if (!API_KEY) return
 
     function initMap() {
       if (!mapRef.current || mapInstance.current) return
       try {
+        // Capture constructors here where google is guaranteed available
+        mapsCtors.current = {
+          LatLng: google.maps.LatLng,
+          LatLngBounds: google.maps.LatLngBounds,
+        }
         PillMarkerClass.current = makePillMarkerClass((path) => router.push(path))
-        mapInstance.current = new google.maps.Map(mapRef.current, {
+        const map = new google.maps.Map(mapRef.current, {
           center: CENTER,
           zoom: ZOOM,
           mapTypeId: 'roadmap',
           disableDefaultUI: true,
           zoomControl: true,
-          gestureHandling: 'greedy', // single-finger pan on mobile, no ctrl-to-zoom prompt
+          gestureHandling: 'greedy',
           zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
         })
+        map.addListener('click', () => {
+          activeMarker.current?.deactivate()
+          activeMarker.current = null
+        })
+        mapInstance.current = map
         setMapReady(true)
       } catch {
         setMapError('Failed to load the map. Please refresh the page.')
@@ -226,14 +314,10 @@ export default function MapClient() {
     }
 
     const win = window as Window & { google?: { maps?: unknown } }
-
-    // Already loaded (e.g. component remounted after navigation)
     if (win.google?.maps) { initMap(); return }
 
     const existing = document.querySelector('script[data-gmaps]') as HTMLScriptElement | null
     if (existing) {
-      // Script tag exists but may or may not have fired its load event.
-      // Poll until google.maps is available rather than relying on a second listener.
       const poll = setInterval(() => {
         if (win.google?.maps) { clearInterval(poll); initMap() }
       }, 50)
@@ -247,46 +331,15 @@ export default function MapClient() {
     script.addEventListener('load', initMap)
     script.addEventListener('error', () => setMapError('Failed to load Google Maps. Check your API key.'))
     document.head.appendChild(script)
-  }, [])
+  }, [router])
 
-  const closeActive = useCallback(() => {
-    activeMarker.current?.deactivate()
-    activeMarker.current = null
-  }, [])
-
-  // Place markers once map + listings ready
+  // Attach idle listener once map is ready
   useEffect(() => {
-    if (!mapReady || !mapInstance.current || !PillMarkerClass.current) return
-
+    if (!mapReady || !mapInstance.current) return
     const map = mapInstance.current
-    const Marker = PillMarkerClass.current
-
-    function onActivate(marker: PillMarkerInstance) {
-      if (activeMarker.current && activeMarker.current !== marker) {
-        activeMarker.current.deactivate()
-      }
-      marker.activate()
-      activeMarker.current = marker
-    }
-
-    function addMarker(position: google.maps.LatLngLiteral, listing: Listing) {
-      const latLng = new google.maps.LatLng(position.lat, position.lng)
-      const m = new Marker(latLng, listing, onActivate)
-      m.setMap(map)
-    }
-
-    // Only place listings that already have coordinates.
-    // Listings without lat/lng are skipped — the Geocoding API is not enabled.
-    for (const listing of listings) {
-      if (listing.lat && listing.lng) {
-        addMarker({ lat: listing.lat, lng: listing.lng }, listing)
-      }
-    }
-
-    map.addListener('click', closeActive)
-
-    return () => { closeActive() }
-  }, [mapReady, listings, closeActive])
+    const listener = map.addListener('idle', onIdle)
+    return () => { listener.remove() }
+  }, [mapReady, onIdle])
 
   if (mapError) {
     return (
@@ -330,11 +383,14 @@ export default function MapClient() {
           background: 'linear-gradient(90deg, #e2e2e2 25%, #d0d0d0 50%, #e2e2e2 75%)',
           backgroundSize: '200% 100%',
           animation: 'shimmer 1.4s ease-in-out infinite',
+          pointerEvents: 'none',
         }} />
       )}
-      {!loading && listings.length === 0 && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(4px)' }}>
-          <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, color: 'var(--text-primary)', margin: 0 }}>No listings found in this area</p>
+      {!loading && listingCount === 0 && (
+        <div style={{ position: 'absolute', bottom: 'calc(80px + env(safe-area-inset-bottom))', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none' }}>
+          <div style={{ background: 'white', borderRadius: 12, padding: '10px 18px', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            No listings in this area
+          </div>
         </div>
       )}
       <div ref={mapRef} style={{ flex: 1 }} />
