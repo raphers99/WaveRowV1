@@ -7,11 +7,11 @@ import { ChevronLeft, ChevronRight, Bed, Bath, Square, MapPin, Wifi, Car, Washin
 import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/components/ui'
 import { SubletBadge } from '@/components/listing/SubletBadge'
+import { ListingMap } from '@/components/listing/ListingMap'
 import { fadeUp } from '@/lib/motion'
 import { startConversation, deleteListing } from '@/lib/api'
 import type { Listing } from '@/types'
 
-const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 function getSupabase() {
   return createClient()
@@ -136,14 +136,6 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
   const posterName = profile?.name ?? 'Listed by'
   const posterInitials = posterName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const roleLabel = profile?.role === 'landlord' ? 'Landlord' : profile?.role === 'subletter' ? 'Subletter' : 'Student'
-
-  const mapCenter = listing.lat && listing.lng 
-    ? `${listing.lat},${listing.lng}` 
-    : encodeURIComponent(listing.address)
-
-  const staticMapUrl = MAPS_KEY
-    ? `https://maps.googleapis.com/maps/api/staticmap?center=${mapCenter}&zoom=15&size=600x200&scale=2&markers=color:0x006747%7C${mapCenter}&key=${MAPS_KEY}`
-    : null
 
   return (
     <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(96px + env(safe-area-inset-bottom))', minHeight: '100dvh', background: 'var(--surface)' }}>
@@ -367,10 +359,8 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
               <MapPin size={14} color="var(--olive)" />{listing.address}
             </p>
-            {staticMapUrl && (
-              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,103,71,0.08)' }}>
-                <img src={staticMapUrl} alt={`Map of ${listing.address}`} style={{ width: '100%', display: 'block' }} loading="lazy" />
-              </div>
+            {listing.lat && listing.lng && (
+              <ListingMap lat={listing.lat} lng={listing.lng} address={listing.address} />
             )}
           </div>
 
