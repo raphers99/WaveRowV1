@@ -7,8 +7,8 @@ import { toast } from '@/components/ui'
 import type { Listing } from '@/types'
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-const CENTER = { lat: 29.9410, lng: -90.1190 }
-const ZOOM = 15.8
+const CENTER = { lat: 29.9311, lng: -90.1175 }
+const ZOOM = 15
 
 // ─── Price formatting ────────────────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ function makePillMarkerClass(navigate: (path: string) => void) {
       const btn = document.createElement('button')
       btn.textContent = 'View Listing'
       btn.style.cssText = 'display:block;width:100%;background:#006747;color:#fff;border:none;text-align:center;padding:10px 0;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer'
-      btn.addEventListener('click', (e) => { e.stopPropagation(); navigate(`/listing?id=${this.listing.id}`) })
+      btn.addEventListener('click', (e) => { e.stopPropagation(); window.location.href = `/listing?id=${this.listing.id}` })
 
       // Caret
       const caret = document.createElement('div')
@@ -181,7 +181,6 @@ export default function MapClient() {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstance = useRef<google.maps.Map | null>(null)
   const activeMarker = useRef<PillMarkerInstance | null>(null)
-  const markersRef = useRef<PillMarkerInstance[]>([])
   const PillMarkerClass = useRef<ReturnType<typeof makePillMarkerClass> | null>(null)
 
   const [mapReady, setMapReady] = useState(false)
@@ -189,30 +188,18 @@ export default function MapClient() {
   const [loading, setLoading] = useState(true)
   const [mapError, setMapError] = useState<string | null>(null)
 
-  const fetchListingsInBounds = useCallback(async () => {
-    if (!mapInstance.current) return
-    const bounds = mapInstance.current.getBounds()
-    if (!bounds) return
-    
-    const ne = bounds.getNorthEast()
-    const sw = bounds.getSouthWest()
-
-    const { data, error } = await createClient()
+  // Fetch listings
+  useEffect(() => {
+    createClient()
       .from('listings')
       .select('id, title, address, rent, beds, baths, lat, lng')
       .eq('status', 'ACTIVE')
-      .gte('lat', sw.lat())
-      .lte('lat', ne.lat())
-      .gte('lng', sw.lng())
-      .lte('lng', ne.lng())
-      .limit(100)
-
-    if (error) {
-      toast.show('Could not load map listings', 'error')
-    } else {
-      setListings((data ?? []) as Listing[])
-    }
-    setLoading(false)
+      .limit(200)
+      .then(({ data, error }) => {
+        if (error) toast.show('Could not load map listings', 'error')
+        setListings((data ?? []) as Listing[])
+        setLoading(false)
+      })
   }, [])
 
   // Load Google Maps (no extra libraries needed — OverlayView is in core)
@@ -229,26 +216,36 @@ export default function MapClient() {
           mapTypeId: 'roadmap',
           disableDefaultUI: true,
           zoomControl: true,
+          gestureHandling: 'greedy', // single-finger pan on mobile, no ctrl-to-zoom prompt
           zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER },
-          // No mapId needed — OverlayView works without it
         })
         setMapReady(true)
-        mapInstance.current.addListener('idle', fetchListingsInBounds)
       } catch {
         setMapError('Failed to load the map. Please refresh the page.')
       }
     }
 
-    if (window.google?.maps) { initMap(); return }
+    const win = window as Window & { google?: { maps?: unknown } }
 
-    const existing = document.querySelector('script[data-gmaps]')
-    if (existing) { existing.addEventListener('load', initMap); return }
+    // Already loaded (e.g. component remounted after navigation)
+    if (win.google?.maps) { initMap(); return }
+
+    const existing = document.querySelector('script[data-gmaps]') as HTMLScriptElement | null
+    if (existing) {
+      // Script tag exists but may or may not have fired its load event.
+      // Poll until google.maps is available rather than relying on a second listener.
+      const poll = setInterval(() => {
+        if (win.google?.maps) { clearInterval(poll); initMap() }
+      }, 50)
+      return () => clearInterval(poll)
+    }
 
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}`
     script.async = true
     script.dataset.gmaps = '1'
     script.addEventListener('load', initMap)
+    script.addEventListener('error', () => setMapError('Failed to load Google Maps. Check your API key.'))
     document.head.appendChild(script)
   }, [])
 
@@ -272,14 +269,10 @@ export default function MapClient() {
       activeMarker.current = marker
     }
 
-    markersRef.current.forEach(m => m.setMap(null))
-    markersRef.current = []
-
     function addMarker(position: google.maps.LatLngLiteral, listing: Listing) {
       const latLng = new google.maps.LatLng(position.lat, position.lng)
       const m = new Marker(latLng, listing, onActivate)
       m.setMap(map)
-      markersRef.current.push(m)
     }
 
     // Only place listings that already have coordinates.
@@ -292,11 +285,7 @@ export default function MapClient() {
 
     map.addListener('click', closeActive)
 
-    return () => { 
-      closeActive()
-      markersRef.current.forEach(m => m.setMap(null))
-      markersRef.current = []
-    }
+    return () => { closeActive() }
   }, [mapReady, listings, closeActive])
 
   if (mapError) {

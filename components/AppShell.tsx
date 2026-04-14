@@ -9,7 +9,9 @@ function hideChromeForPath(pathname: string) {
   const login = pathname === '/login' || pathname === '/login/'
   const newListing = pathname === '/listings/new' || pathname === '/listings/new/'
   const editListing = pathname === '/listing/edit' || pathname === '/listing/edit/'
-  return login || newListing || editListing
+  // Map page: footer makes the page scrollable, which intercepts touch pan gestures
+  const map = pathname === '/map' || pathname === '/map/'
+  return login || newListing || editListing || map
 }
 
 function GlobalFooter() {
