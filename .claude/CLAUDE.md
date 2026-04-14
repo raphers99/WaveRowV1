@@ -64,7 +64,7 @@ src/
 
 ## Auth
 
-- Method: Microsoft OAuth via Supabase (`signInWithOAuth({ provider: 'azure', options: { scopes: 'email' } })`)
+- Method: Google OAuth via Supabase (`signInWithOAuth({ provider: 'google', options: { queryParams: { hd: 'tulane.edu' } } })`)
 - Domain enforcement: @tulane.edu only — enforced in `/auth/callback/page.tsx` after `exchangeCodeForSession`
 - Non-Tulane accounts are signed out and redirected to `/login?error=not_tulane`
 - OAuth callback: `/auth/callback` (client page, NOT a route handler — static export incompatible with route handlers)
