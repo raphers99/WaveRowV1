@@ -1,16 +1,15 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { Shield, Home, AlertTriangle, Lock } from 'lucide-react'
+import { Shield, Home, AlertTriangle, Lock, SlidersHorizontal, X } from 'lucide-react'
 import { Button, toast } from '@/components/ui'
 import { ListingGrid, ListingSkeleton } from '@/components/listing'
 import { saveListing, unsaveListing } from '@/lib/api'
 import { trackEvent } from '@/lib/analytics'
 import { createClient } from '@/lib/supabase/client'
-import { useState, useEffect } from 'react'
 import type { Listing } from '@/types'
 
 // ─── Filter pill helper ──────────────────────────────────────────────────────
@@ -30,85 +29,287 @@ function buildUrl(
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+const AVAILABLE_DATES = [
+  { label: 'Fall 2025', val: '2025-08' },
+  { label: 'Spring 2026', val: '2026-01' },
+  { label: 'Summer 2026', val: '2026-05' },
+  { label: 'Fall 2026', val: '2026-08' },
+  { label: 'Spring 2027', val: '2027-01' },
+  { label: 'Summer 2027', val: '2027-05' },
+]
+
 function FilterBar() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [open, setOpen] = useState(false)
 
-  const furnished = searchParams.get('furnished') === 'true'
-  const pets = searchParams.get('pets') === 'true'
-  const sublet = searchParams.get('sublet') === 'true'
+  // Read current params
   const beds = searchParams.get('beds')
-  const priceMax = searchParams.get('price_max')
-  const sort = searchParams.get('sort') ?? 'newest'
+  const priceMin = searchParams.get('price_min') ?? ''
+  const priceMax = searchParams.get('price_max') ?? ''
+  const furnished = searchParams.get('furnished') === 'true'
+  const available = searchParams.get('available') ?? ''
 
-  const pill = (
-    label: string,
-    active: boolean,
-    changes: Record<string, string | null>,
-  ) => (
+  // Local draft state — only committed on "Show Results"
+  const [draftBeds, setDraftBeds] = useState(beds ?? '')
+  const [draftPriceMin, setDraftPriceMin] = useState(priceMin)
+  const [draftPriceMax, setDraftPriceMax] = useState(priceMax)
+  const [draftFurnished, setDraftFurnished] = useState(furnished)
+  const [draftAvailable, setDraftAvailable] = useState(available)
+
+  // Sync draft when sheet opens
+  function handleOpen() {
+    setDraftBeds(beds ?? '')
+    setDraftPriceMin(priceMin)
+    setDraftPriceMax(priceMax)
+    setDraftFurnished(furnished)
+    setDraftAvailable(available)
+    setOpen(true)
+  }
+
+  function applyFilters() {
+    router.push(buildUrl(searchParams, {
+      beds: draftBeds || null,
+      price_min: draftPriceMin || null,
+      price_max: draftPriceMax || null,
+      furnished: draftFurnished ? 'true' : null,
+      available: draftAvailable || null,
+    }), { scroll: false })
+    setOpen(false)
+  }
+
+  function clearAll() {
+    router.push(buildUrl(searchParams, {
+      beds: null, price_min: null, price_max: null,
+      furnished: null, available: null,
+    }), { scroll: false })
+    setOpen(false)
+  }
+
+  const activeCount = [
+    !!beds, !!priceMin, !!priceMax, furnished, !!available,
+  ].filter(Boolean).length
+
+  const sectionLabel: React.CSSProperties = {
+    fontFamily: 'var(--font-dm-sans)',
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--olive)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    marginBottom: 10,
+  }
+
+  const pillBtn = (label: string, active: boolean, onClick: () => void) => (
     <button
       key={label}
-      onClick={() => router.push(buildUrl(searchParams, changes), { scroll: false })}
+      onClick={onClick}
       style={{
-        padding: '6px 14px',
+        padding: '8px 18px',
         borderRadius: 99,
-        fontSize: 13,
         fontFamily: 'var(--font-dm-sans)',
-        fontWeight: active ? 700 : 400,
+        fontSize: 14,
+        fontWeight: active ? 600 : 400,
         background: active ? 'var(--olive)' : 'white',
-        color: active ? 'white' : 'var(--text-secondary)',
-        border: `1px solid ${active ? 'var(--olive)' : 'rgba(0,103,71,0.15)'}`,
+        color: active ? 'white' : 'var(--text-primary)',
+        border: `1.5px solid ${active ? 'var(--olive)' : 'rgba(0,0,0,0.12)'}`,
         cursor: 'pointer',
-        transition: 'background 0.15s, color 0.15s',
-        whiteSpace: 'nowrap' as const,
+        transition: 'all 0.15s',
       }}
     >
       {label}
     </button>
   )
 
-  const BEDS = [
-    { label: 'Any beds', val: null },
-    { label: '1+ bed', val: '1' },
-    { label: '2+ beds', val: '2' },
-    { label: '3+ beds', val: '3' },
-  ]
-  const PRICE_MAX = [
-    { label: 'Any price', val: null },
-    { label: '≤$1k', val: '1000' },
-    { label: '≤$1.5k', val: '1500' },
-    { label: '≤$2k', val: '2000' },
-  ]
-  const SORTS = [
-    { label: 'Newest', val: 'newest' },
-    { label: 'Price ↑', val: 'price_asc' },
-    { label: 'Price ↓', val: 'price_desc' },
-  ]
-
-  const anyFilterActive = furnished || pets || sublet || !!beds || !!priceMax
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Row 1: Type filters + sort */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {anyFilterActive && pill('Clear all', false, {
-          furnished: null, pets: null, sublet: null, beds: null, price_max: null,
-        })}
-        {pill('Furnished', furnished, { furnished: furnished ? null : 'true' })}
-        {pill('Pets OK', pets, { pets: pets ? null : 'true' })}
-        {pill('Sublets', sublet, { sublet: sublet ? null : 'true' })}
-        {SORTS.map(s => pill(
-          s.label,
-          sort === s.val,
-          { sort: s.val === 'newest' ? null : s.val },
-        ))}
+    <>
+      {/* Trigger button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          onClick={handleOpen}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '9px 16px',
+            borderRadius: 99,
+            background: activeCount > 0 ? 'var(--olive)' : 'white',
+            color: activeCount > 0 ? 'white' : 'var(--text-primary)',
+            border: `1.5px solid ${activeCount > 0 ? 'var(--olive)' : 'rgba(0,0,0,0.12)'}`,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500,
+            cursor: 'pointer',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          }}
+          aria-label="Open filters"
+        >
+          <SlidersHorizontal size={15} />
+          Filters
+          {activeCount > 0 && (
+            <span style={{
+              background: 'white', color: 'var(--olive)',
+              borderRadius: 99, fontSize: 11, fontWeight: 700,
+              padding: '1px 6px', lineHeight: 1.4,
+            }}>{activeCount}</span>
+          )}
+        </button>
+        {activeCount > 0 && (
+          <button
+            onClick={clearAll}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-dm-sans)', fontSize: 13,
+              color: 'var(--text-muted)', padding: '4px 8px',
+            }}
+          >
+            Clear all
+          </button>
+        )}
       </div>
-      {/* Row 2: Beds + price */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {BEDS.map(b => pill(b.label, beds === b.val, { beds: b.val }))}
-        {PRICE_MAX.map(p => pill(p.label, priceMax === p.val, { price_max: p.val }))}
-      </div>
-    </div>
+
+      {/* Backdrop */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+              zIndex: 200,
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Filter sheet */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="sheet"
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 340, damping: 36 }}
+            style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0,
+              background: 'white',
+              borderRadius: '20px 20px 0 0',
+              zIndex: 201,
+              maxHeight: '88dvh',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.12)',
+            }}
+          >
+            {/* Sheet header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '18px 20px 14px',
+              borderBottom: '0.5px solid rgba(0,0,0,0.08)',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Filters</span>
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close filters"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 0' }}>
+
+              {/* RENT */}
+              <p style={sectionLabel}>Rent</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Min"
+                  value={draftPriceMin}
+                  onChange={e => setDraftPriceMin(e.target.value)}
+                  style={{
+                    flex: 1, padding: '10px 12px', borderRadius: 10,
+                    border: '1.5px solid rgba(0,0,0,0.12)',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: 15,
+                    color: 'var(--text-primary)', background: 'var(--surface)',
+                    outline: 'none',
+                  }}
+                />
+                <span style={{ fontFamily: 'var(--font-dm-sans)', color: 'var(--text-muted)', fontSize: 16 }}>–</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Max"
+                  value={draftPriceMax}
+                  onChange={e => setDraftPriceMax(e.target.value)}
+                  style={{
+                    flex: 1, padding: '10px 12px', borderRadius: 10,
+                    border: '1.5px solid rgba(0,0,0,0.12)',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: 15,
+                    color: 'var(--text-primary)', background: 'var(--surface)',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* BEDS */}
+              <p style={sectionLabel}>Beds</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                {[
+                  { label: 'Any', val: '' },
+                  { label: '1', val: '1' },
+                  { label: '2', val: '2' },
+                  { label: '3', val: '3' },
+                  { label: '4+', val: '4' },
+                ].map(b => pillBtn(b.label, draftBeds === b.val, () => setDraftBeds(b.val)))}
+              </div>
+
+              {/* AVAILABLE DATE */}
+              <p style={sectionLabel}>Available Date</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                {AVAILABLE_DATES.map(d => pillBtn(
+                  d.label,
+                  draftAvailable === d.val,
+                  () => setDraftAvailable(draftAvailable === d.val ? '' : d.val),
+                ))}
+              </div>
+
+              {/* FURNISHED */}
+              <p style={sectionLabel}>Furnished</p>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+                {pillBtn('Any', !draftFurnished, () => setDraftFurnished(false))}
+                {pillBtn('Furnished', draftFurnished, () => setDraftFurnished(true))}
+              </div>
+
+            </div>
+
+            {/* Sticky footer */}
+            <div style={{
+              flexShrink: 0,
+              padding: '12px 20px',
+              paddingBottom: 'calc(12px + env(safe-area-inset-bottom))',
+              borderTop: '0.5px solid rgba(0,0,0,0.08)',
+              background: 'white',
+            }}>
+              <button
+                onClick={applyFilters}
+                style={{
+                  width: '100%', background: 'var(--olive)', color: 'white',
+                  border: 'none', borderRadius: 14, padding: '14px',
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16,
+                  cursor: 'pointer',
+                }}
+              >
+                Show Results
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 
@@ -174,8 +375,121 @@ export function HomeClient({
     }
   }
 
+  const headline = 'Student Housing, Done Right.'.split(' ')
+
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
+
+      {/* ── Hero ── */}
+      <div style={{
+        position: 'relative',
+        background: 'linear-gradient(160deg, var(--olive) 0%, var(--olive-dark) 100%)',
+        paddingTop: 'calc(72px + env(safe-area-inset-top))',
+        paddingBottom: 64,
+        overflow: 'hidden',
+      }}>
+        {/* Grid texture */}
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.06, pointerEvents: 'none' }}>
+          <svg width="100%" height="200%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
+
+        <div style={{ position: 'relative', maxWidth: 640, margin: '0 auto', padding: '0 20px', textAlign: 'center' }}>
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 99, padding: '5px 14px', marginBottom: 16 }}
+          >
+            <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'rgba(255,255,255,0.9)' }}>
+              Built for students · @tulane.edu login required
+            </span>
+          </motion.div>
+
+          <motion.h1 style={{
+            fontFamily: 'var(--font-playfair)', fontWeight: 800,
+            fontSize: 'clamp(32px, 7vw, 56px)', color: 'white', lineHeight: 1.1,
+            margin: '0 0 16px',
+            display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.25em',
+          }}>
+            {headline.map((word, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                {word}
+              </motion.span>
+            ))}
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 28, lineHeight: 1.6 }}
+          >
+            Verified apartments, sublets, and roommates — built for students.
+          </motion.p>
+
+          {/* Auth CTA for logged-out users */}
+          {isAuthenticated === false && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65, duration: 0.4 }}
+            >
+              <Link
+                href="/login"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
+                  background: 'white', color: 'var(--olive)',
+                  borderRadius: 12, padding: '12px 28px',
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15,
+                  textDecoration: 'none',
+                }}
+              >
+                <Lock size={16} />
+                Log in with your student email
+              </Link>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Wave divider */}
+        <div style={{ position: 'absolute', bottom: -1, left: 0, right: 0 }}>
+          <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
+            <path d="M0 48 C360 0 1080 0 1440 48 L1440 48 L0 48 Z" fill="var(--surface)" />
+          </svg>
+        </div>
+      </div>
+
+      {/* ── Trust badge ── */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 16px 0' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            background: 'white', border: '1px solid rgba(0,103,71,0.12)',
+            borderRadius: 99, padding: '10px 20px',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+          }}
+        >
+          <Shield size={15} color="var(--olive)" strokeWidth={2} />
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--olive)', fontWeight: 600 }}>
+            100% Verified Tulane Users · Student-Only Community
+          </span>
+        </motion.div>
+      </div>
 
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 16px' }}>
 
