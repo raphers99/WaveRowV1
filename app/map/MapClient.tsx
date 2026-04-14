@@ -7,8 +7,8 @@ import { toast } from '@/components/ui'
 import type { Listing } from '@/types'
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-const CENTER = { lat: 29.9380, lng: -90.1175 }
-const ZOOM = 16
+const CENTER = { lat: 29.9430, lng: -90.1175 }
+const ZOOM = 15
 
 // ─── Price formatting ────────────────────────────────────────────────────────
 
