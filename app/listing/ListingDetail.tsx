@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Bed, Bath, Square, MapPin, Wifi, Car, WashingMachine, Thermometer, Dog, Dumbbell, Waves, Utensils, Zap, Star, AlertTriangle, Home, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/components/ui'
-import { PriceTag } from '@/components/listing/PriceTag'
 import { SubletBadge } from '@/components/listing/SubletBadge'
 import { fadeUp } from '@/lib/motion'
 import { startConversation, deleteListing } from '@/lib/api'
@@ -147,8 +146,9 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
     : null
 
   return (
-    <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 120, minHeight: '100dvh', background: 'var(--surface)' }}>
-      {/* Back button */}
+    <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(96px + env(safe-area-inset-bottom))', minHeight: '100dvh', background: 'var(--surface)' }}>
+
+      {/* Back button — floats over image */}
       <button
         onClick={() => router.back()}
         style={{ position: 'fixed', top: 'calc(64px + env(safe-area-inset-top))', left: 16, zIndex: 30, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
@@ -157,82 +157,124 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
         <ChevronLeft size={20} color="var(--text-primary)" />
       </button>
 
-      {/* Photo gallery */}
-      <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden', background: 'var(--olive)' }}>
-        {hasPhotos ? (
-          <>
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={photoIndex}
-                src={photos[photoIndex]}
-                alt={listing.title ?? listing.address}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-            </AnimatePresence>
-            {photos.length > 1 && (
-              <>
-                <button onClick={prev} aria-label="Previous photo" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.85)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ChevronLeft size={18} />
-                </button>
-                <button onClick={next} aria-label="Next photo" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.85)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ChevronRight size={18} />
-                </button>
-                <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
-                  {photos.map((_, i) => (
-                    <button key={i} onClick={() => setPhotoIndex(i)} aria-label={`Photo ${i + 1}`} style={{ width: i === photoIndex ? 20 : 6, height: 6, borderRadius: 3, background: i === photoIndex ? 'white' : 'rgba(255,255,255,0.5)', border: 'none', cursor: 'pointer', transition: 'width 0.2s', padding: 0 }} />
-                  ))}
-                </div>
-              </>
-            )}
-          </>
-        ) : (
-          // Placeholder when no photos
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <Home size={48} color="rgba(255,255,255,0.6)" strokeWidth={1.5} />
-            <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0 }}>No photos yet</p>
-          </div>
-        )}
+      {/* ── HERO IMAGE (~45vh, rounded, margined) ── */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <div style={{ position: 'relative', height: '45vh', minHeight: 220, maxHeight: 360, borderRadius: 20, overflow: 'hidden', background: 'rgba(0,103,71,0.12)' }}>
+          {hasPhotos ? (
+            <>
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={photoIndex}
+                  src={photos[photoIndex]}
+                  alt={listing.title ?? listing.address}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+              </AnimatePresence>
+              {/* Bottom gradient for readability */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 100%)', pointerEvents: 'none' }} />
+              {photos.length > 1 && (
+                <>
+                  <button onClick={prev} aria-label="Previous photo" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.85)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button onClick={next} aria-label="Next photo" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.85)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <ChevronRight size={18} />
+                  </button>
+                  <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+                    {photos.map((_, i) => (
+                      <button key={i} onClick={() => setPhotoIndex(i)} aria-label={`Photo ${i + 1}`} style={{ width: i === photoIndex ? 20 : 6, height: 6, borderRadius: 3, background: i === photoIndex ? 'white' : 'rgba(255,255,255,0.5)', border: 'none', cursor: 'pointer', transition: 'width 0.2s', padding: 0 }} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <Home size={40} color="rgba(0,103,71,0.3)" strokeWidth={1.5} />
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: 0 }}>No photos yet</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px' }}>
-        <motion.div variants={fadeUp} initial="hidden" animate="visible">
+      {/* ── CONTENT ── */}
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '20px 16px 0' }}>
+        <motion.div variants={fadeUp} initial="hidden" animate="visible" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-          {/* Title + price + badges */}
-          {listing.title && (
-            <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px', lineHeight: 1.25 }}>
-              {listing.title}
-            </h1>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-            <PriceTag price={listing.rent} />
-            {listing.is_sublease && <SubletBadge />}
+          {/* ── SECTION 1: Title + Price + CTA ── */}
+          <div style={{ background: 'white', borderRadius: 20, padding: '20px', border: '1px solid rgba(0,103,71,0.08)', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            {/* Title row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 4 }}>
+              <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.25, flex: 1 }}>
+                {listing.title ?? listing.address}
+              </h1>
+              <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 22, fontWeight: 700, color: 'var(--olive)', margin: 0, lineHeight: 1 }}>
+                  ${listing.rent.toLocaleString()}
+                </p>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0', textAlign: 'right' }}>/mo</p>
+              </div>
+            </div>
+
+            {/* Badges */}
+            {listing.is_sublease && (
+              <div style={{ marginBottom: 12 }}>
+                <SubletBadge />
+              </div>
+            )}
+
+            {/* Address */}
+            <p style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '8px 0 16px' }}>
+              <MapPin size={13} />{listing.address}
+            </p>
+
+            {/* Key stats */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              {[
+                { icon: <Bed size={14} />, label: `${listing.beds} bed${listing.beds !== 1 ? 's' : ''}` },
+                { icon: <Bath size={14} />, label: `${listing.baths} bath${listing.baths !== 1 ? 's' : ''}` },
+                ...(listing.sqft ? [{ icon: <Square size={14} />, label: `${listing.sqft.toLocaleString()} sqft` }] : []),
+              ].map(({ icon, label }) => (
+                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(0,103,71,0.06)', borderRadius: 99, padding: '6px 12px', fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500, color: 'var(--olive)' }}>
+                  {icon}{label}
+                </span>
+              ))}
+            </div>
+
+            {/* CTA */}
+            {!isOwner && (
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleContact}
+                disabled={contacting}
+                style={{ width: '100%', background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: contacting ? 'not-allowed' : 'pointer', opacity: contacting ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <MessageCircle size={18} />
+                {contacting ? 'Opening…' : 'Contact Landlord'}
+              </motion.button>
+            )}
+            {isOwner && (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => router.push(`/listing/edit?id=${listing.id}`)}
+                  style={{ flex: 1, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
+                  Edit Listing
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleDelete} disabled={deleting}
+                  style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}>
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </motion.button>
+              </div>
+            )}
           </div>
 
-          {/* Key details row */}
-          <div style={{ display: 'flex', gap: 10, margin: '12px 0 8px', flexWrap: 'wrap' }}>
-            {[
-              { icon: <Bed size={15} />, label: `${listing.beds} bed${listing.beds !== 1 ? 's' : ''}` },
-              { icon: <Bath size={15} />, label: `${listing.baths} bath${listing.baths !== 1 ? 's' : ''}` },
-              ...(listing.sqft ? [{ icon: <Square size={15} />, label: `${listing.sqft.toLocaleString()} sqft` }] : []),
-            ].map(({ icon, label }) => (
-              <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'white', border: '1px solid rgba(0,103,71,0.12)', borderRadius: 99, padding: '6px 14px', fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
-                {icon}{label}
-              </span>
-            ))}
-          </div>
-
-          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 20px' }}>
-            <MapPin size={14} />{listing.address}
-          </p>
-
-          {/* AI scam flags */}
+          {/* ── SECTION 2: AI scam flags ── */}
           {aiFlags.length > 0 && (
-            <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 14, padding: '14px 16px', marginBottom: 20 }}>
+            <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 16, padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <AlertTriangle size={16} color="#d97706" />
                 <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13, color: '#92400e' }}>AI Scam Detection Flags</span>
@@ -245,47 +287,54 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
             </div>
           )}
 
-          {/* Description */}
+          {/* ── SECTION 3: Description ── */}
           {listing.description && (
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ background: 'white', borderRadius: 16, padding: '20px', border: '1px solid rgba(0,103,71,0.08)' }}>
               <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 10px' }}>About this place</h3>
-              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>{listing.description}</p>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.75, margin: 0 }}>{listing.description}</p>
             </div>
           )}
 
-          {/* Features */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-            {listing.furnished && <span style={{ padding: '6px 14px', borderRadius: 99, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>Furnished</span>}
-            {listing.pets && <span style={{ padding: '6px 14px', borderRadius: 99, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>Pets OK</span>}
-            {listing.utilities && <span style={{ padding: '6px 14px', borderRadius: 99, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>Utilities Included</span>}
+          {/* ── SECTION 4: Details (features + amenities + availability) ── */}
+          <div style={{ background: 'white', borderRadius: 16, padding: '20px', border: '1px solid rgba(0,103,71,0.08)' }}>
+            <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 14px' }}>Details</h3>
+
+            {/* Feature tags */}
+            {(listing.furnished || listing.pets || listing.utilities) && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                {listing.furnished && <span style={{ padding: '6px 14px', borderRadius: 99, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>Furnished</span>}
+                {listing.pets && <span style={{ padding: '6px 14px', borderRadius: 99, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>Pets OK</span>}
+                {listing.utilities && <span style={{ padding: '6px 14px', borderRadius: 99, background: 'rgba(0,103,71,0.08)', color: 'var(--olive)', fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}>Utilities Included</span>}
+              </div>
+            )}
+
+            {/* Amenities */}
+            {listing.amenities.length > 0 && (
+              <div style={{ marginBottom: listing.available_from ? 16 : 0 }}>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px' }}>Amenities</p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {listing.amenities.map(a => (
+                    <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 99, background: 'var(--surface)', border: '1px solid rgba(0,103,71,0.12)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-dm-sans)' }}>
+                      {AMENITY_ICONS[a] ?? null}{a}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Availability */}
+            {listing.available_from && (
+              <div style={{ borderTop: listing.amenities.length > 0 || listing.furnished || listing.pets || listing.utilities ? '0.5px solid rgba(0,0,0,0.06)' : 'none', paddingTop: listing.amenities.length > 0 ? 16 : 0, marginTop: listing.amenities.length > 0 ? 0 : 0 }}>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 4px' }}>Available from</p>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                  {new Date(listing.available_from).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Amenities */}
-          {listing.amenities.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 12px' }}>Amenities</h3>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {listing.amenities.map(a => (
-                  <span key={a} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 99, background: 'white', border: '1px solid rgba(0,103,71,0.12)', color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-dm-sans)' }}>
-                    {AMENITY_ICONS[a] ?? null}{a}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Availability */}
-          {listing.available_from && (
-            <div style={{ background: 'white', borderRadius: 14, padding: '16px', border: '1px solid rgba(0,103,71,0.08)', marginBottom: 24 }}>
-              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '0 0 4px' }}>Available from</p>
-              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                {new Date(listing.available_from).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
-          )}
-
-          {/* Poster / landlord info card */}
-          <div style={{ background: 'white', borderRadius: 16, padding: '16px', border: '1px solid rgba(0,103,71,0.08)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* ── SECTION 5: Lister card ── */}
+          <div style={{ background: 'white', borderRadius: 16, padding: '16px 20px', border: '1px solid rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', gap: 14 }}>
             {profile?.avatar ? (
               <img src={profile.avatar} alt={posterName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
             ) : (
@@ -299,39 +348,35 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
                 {roleLabel}
               </span>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleContact}
-              disabled={contacting}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13, cursor: 'pointer', flexShrink: 0, opacity: contacting ? 0.7 : 1 }}
-            >
-              <MessageCircle size={14} />
-              Message
-            </motion.button>
+            {!isOwner && (
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={handleContact}
+                disabled={contacting}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13, cursor: 'pointer', flexShrink: 0, opacity: contacting ? 0.7 : 1 }}
+              >
+                <MessageCircle size={14} />
+                Message
+              </motion.button>
+            )}
           </div>
 
-          {/* Address + static map */}
-          <div style={{ marginBottom: 24 }}>
+          {/* ── SECTION 6: Location ── */}
+          <div style={{ background: 'white', borderRadius: 16, padding: '20px', border: '1px solid rgba(0,103,71,0.08)' }}>
             <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 10px' }}>Location</h3>
             <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
               <MapPin size={14} color="var(--olive)" />{listing.address}
             </p>
             {staticMapUrl && (
-              <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(0,103,71,0.08)' }}>
-                <img
-                  src={staticMapUrl}
-                  alt={`Map of ${listing.address}`}
-                  style={{ width: '100%', display: 'block' }}
-                  loading="lazy"
-                />
+              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,103,71,0.08)' }}>
+                <img src={staticMapUrl} alt={`Map of ${listing.address}`} style={{ width: '100%', display: 'block' }} loading="lazy" />
               </div>
             )}
           </div>
 
-          {/* Reviews */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          {/* ── SECTION 7: Reviews ── */}
+          <div style={{ background: 'white', borderRadius: 16, padding: '20px', border: '1px solid rgba(0,103,71,0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                 Reviews {reviews.length > 0 && `(${reviews.length})`}
               </h3>
@@ -345,7 +390,7 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
             <AnimatePresence>
               {showReviewForm && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: 16 }}>
-                  <div style={{ background: 'white', borderRadius: 14, padding: 16, border: '1px solid rgba(0,103,71,0.1)' }}>
+                  <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 16 }}>
                     <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
                       {[1,2,3,4,5].map(i => (
                         <button key={i} onClick={() => setReviewRating(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
@@ -353,20 +398,10 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
                         </button>
                       ))}
                     </div>
-                    <textarea
-                      value={reviewBody}
-                      onChange={e => setReviewBody(e.target.value)}
-                      placeholder="Share your experience with this landlord..."
-                      rows={3}
-                      className="input"
-                      style={{ marginBottom: 10, resize: 'none' }}
-                    />
-                    <button
-                      onClick={handleSubmitReview}
-                      disabled={submittingReview || !reviewBody.trim()}
-                      style={{ background: reviewBody.trim() ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: reviewBody.trim() ? 'pointer' : 'not-allowed', width: '100%' }}
-                    >
-                      {submittingReview ? 'Submitting...' : 'Submit Review'}
+                    <textarea value={reviewBody} onChange={e => setReviewBody(e.target.value)} placeholder="Share your experience with this landlord..." rows={3} className="input" style={{ marginBottom: 10, resize: 'none' }} />
+                    <button onClick={handleSubmitReview} disabled={submittingReview || !reviewBody.trim()}
+                      style={{ background: reviewBody.trim() ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: reviewBody.trim() ? 'pointer' : 'not-allowed', width: '100%' }}>
+                      {submittingReview ? 'Submitting…' : 'Submit Review'}
                     </button>
                   </div>
                 </motion.div>
@@ -374,11 +409,11 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
             </AnimatePresence>
 
             {reviews.length === 0 ? (
-              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)' }}>No reviews yet.</p>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: 0 }}>No reviews yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {reviews.map(r => (
-                  <div key={r.id} style={{ background: 'white', borderRadius: 14, padding: 16, border: '1px solid rgba(0,103,71,0.08)' }}>
+                  <div key={r.id} style={{ borderRadius: 12, padding: '14px 16px', background: 'var(--surface)', border: '1px solid rgba(0,103,71,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{r.author_name}</span>
                       <div style={{ display: 'flex', gap: 2 }}>
@@ -393,74 +428,31 @@ export function ListingDetail({ listing, profile }: { listing: Listing; profile:
             )}
           </div>
 
-          {/* CTA */}
-          {isOwner ? (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => router.push(`/listing/edit?id=${listing.id}`)}
-                style={{ flex: 1, background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-              >
-                Edit Listing
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={handleDelete}
-                disabled={deleting}
-                style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
-              >
-                {deleting ? 'Deleting...' : 'Delete Listing'}
-              </motion.button>
-            </div>
-          ) : (
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleContact}
-              disabled={contacting}
-              style={{ width: '100%', background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 14, padding: '15px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
-            >
-              {contacting ? 'Opening...' : 'Contact About This Listing'}
-            </motion.button>
-          )}
-
         </motion.div>
       </div>
 
-      {/* Sticky price bar */}
-      <div style={{ position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom))', left: 0, right: 0, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderTop: '0.5px solid rgba(0,103,71,0.1)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 40 }}>
-        <PriceTag price={listing.rent} />
+      {/* ── STICKY BOTTOM BAR ── */}
+      <div style={{ position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom))', left: 0, right: 0, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderTop: '0.5px solid rgba(0,103,71,0.1)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 40, gap: 12 }}>
+        <div>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 20, fontWeight: 700, color: 'var(--olive)', margin: 0, lineHeight: 1 }}>${listing.rent.toLocaleString()}<span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>/mo</span></p>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 0' }}>{listing.beds}bd · {listing.baths}ba</p>
+        </div>
         {isOwner ? (
           <div style={{ display: 'flex', gap: 8 }}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => router.push(`/listing/edit?id=${listing.id}`)}
-              style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
-            >
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => router.push(`/listing/edit?id=${listing.id}`)}
+              style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '11px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
               Edit
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={handleDelete}
-              disabled={deleting}
-              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}
-            >
-              {deleting ? 'Deleting...' : 'Delete'}
+            <motion.button whileTap={{ scale: 0.97 }} onClick={handleDelete} disabled={deleting}
+              style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 12, padding: '11px 20px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}>
+              {deleting ? 'Deleting…' : 'Delete'}
             </motion.button>
           </div>
         ) : (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleContact}
-            disabled={contacting}
-            style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: 'pointer', opacity: contacting ? 0.7 : 1 }}
-          >
-            {contacting ? 'Opening...' : 'Contact Landlord'}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleContact} disabled={contacting}
+            style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 12, padding: '11px 28px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 15, cursor: contacting ? 'not-allowed' : 'pointer', opacity: contacting ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <MessageCircle size={16} />
+            {contacting ? 'Opening…' : 'Contact Landlord'}
           </motion.button>
         )}
       </div>
