@@ -88,7 +88,9 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
   }, [conversationId])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   async function handleSend(body: string, tempId?: string) {
@@ -125,8 +127,8 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overscrollBehaviorY: 'contain', padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading ? (
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>Loading...</p>
         ) : messages.length === 0 ? (
