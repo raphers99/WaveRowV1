@@ -234,9 +234,13 @@ function LoginPageInner() {
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--olive)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </div>
                 <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>Check your email</h2>
-                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-                  We sent a 6-digit code to <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
-                </p>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  <p style={{ margin: '0 0 8px' }}>We sent a verification code to <strong style={{ color: 'var(--text-primary)' }}>{email}</strong></p>
+                  <div style={{ fontSize: 13, background: 'rgba(0,103,71,0.04)', padding: '10px 14px', borderRadius: 10, margin: '0 auto', maxWidth: 360, textAlign: 'left' }}>
+                    <p style={{ margin: '0 0 4px' }}>If you don&apos;t see it within a minute, check your spam or junk folder.</p>
+                    <p style={{ margin: 0, opacity: 0.85 }}><strong>Tulane email users:</strong> it may appear in &apos;Other&apos; or filtered inbox tabs.</p>
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24 }} onPaste={handleCodePaste}>
