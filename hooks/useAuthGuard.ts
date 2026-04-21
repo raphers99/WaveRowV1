@@ -56,6 +56,11 @@ export function useAuthGuard() {
           }
         }
       })
+      .catch((err) => {
+        console.error('AuthGuard session error:', err)
+        setIsAuthenticated(false)
+        setUserId(null)
+      })
   }, [pathname, router])
 
   return { isAuthenticated, userId }

@@ -41,15 +41,21 @@ function HomeInner() {
 
   // Resolve auth once on mount
   useEffect(() => {
-    createClient().auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setIsAuthenticated(true)
-        setUserId(data.session.user.id)
-      } else {
+    createClient().auth.getSession()
+      .then(({ data }) => {
+        if (data.session) {
+          setIsAuthenticated(true)
+          setUserId(data.session.user.id)
+        } else {
+          setIsAuthenticated(false)
+          setInitialLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Session error:', err)
         setIsAuthenticated(false)
         setInitialLoading(false)
-      }
-    })
+      })
   }, [])
 
   const fetchPage = useCallback(async (pageIndex: number, replace: boolean) => {
