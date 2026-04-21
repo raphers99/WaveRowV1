@@ -163,8 +163,8 @@ function EditListingForm() {
             lat = data.results[0].geometry.location.lat
             lng = data.results[0].geometry.location.lng
           }
-        } catch (err) {
-          console.error("Geocoding failed", err)
+        } catch {
+          // Geocoding may fail silently — listing still saves without coords
         }
       }
 

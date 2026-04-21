@@ -100,9 +100,8 @@ export default function DashboardPage() {
           email: session.user.email ?? '',
         })
         setData({ profile, userId: session.user.id, email: session.user.email ?? '' })
-      } catch (err) {
+      } catch {
         if (!mountedRef.current) return
-        console.error('[Dashboard] auth error:', err)
         router.replace('/login')
       }
     })()

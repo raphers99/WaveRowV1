@@ -51,6 +51,20 @@ export type RoommateProfile = {
   move_in_date: string; lifestyle: string[]; cleanliness: number;
   bio: string | null; neighborhood: string | null; year: string | null;
   major: string | null; verified: boolean; created_at: string;
+  // Enriched client-side from profiles join
+  name?: string;
+}
+
+export type RoommateMatchResult = {
+  score: number;
+  summary: string;
+  dealbreakers: string[];
+}
+
+export type RoommateMatch = {
+  id: string; user_id: string; candidate_id: string;
+  score: number; summary: string; dealbreakers: string[];
+  created_at: string;
 }
 
 export type RoommateGroup = {

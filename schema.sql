@@ -118,6 +118,8 @@ create table if not exists roommate_profiles (
   year text,
   major text,
   verified boolean not null default false,
+  match_score int,
+  ai_summary text,
   created_at timestamptz not null default now()
 );
 
@@ -160,10 +162,8 @@ create table if not exists roommate_matches (
   user_id uuid references auth.users(id) on delete cascade not null,
   candidate_id uuid references auth.users(id) on delete cascade not null,
   score int not null,
-  headline text not null,
-  positives text[] not null default '{}',
-  watchouts text[] not null default '{}',
-  icebreaker text not null,
+  summary text not null,
+  dealbreakers text[] not null default '{}',
   created_at timestamptz not null default now(),
   unique(user_id, candidate_id)
 );

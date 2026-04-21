@@ -103,9 +103,10 @@ src/
 - saved_listings
 - messages
 - reviews
-- roommate_profiles
+- roommate_profiles (includes match_score, ai_summary)
 - roommate_groups
 - roommate_group_members
+- roommate_matches
 
 ## RLS
 
@@ -325,6 +326,22 @@ src/
 - Optimistic UI required
 - **Mapping:** Use `st_asgeojson` or simple lat/long columns. Map bounds must be passed as `minLat, maxLat, minLng, maxLng` to the Supabase RPC function to ensure "Bounding Box" fetching only.
 - **Profiles:** Every `auth.users` entry must have a corresponding `profiles` row (trigger-based).
+
+## Roommate AI Matching
+
+- Route: /roommates
+- Protected route
+- **Feature**: AI compatibility scoring between logged-in user and candidate students.
+- **Server Action**: Uses `anthropic` fetch internally via `src/app/actions/matchRoommates.ts` (Model: `claude-sonnet-4-20250514`).
+- **Data Flow**: Server action constructs JSON-only prompt comparing user and candidate styles, returns `{ score, summary, dealbreakers }`. Upserts to `roommate_matches` DB table for caching/persistence.
+- **UI Element**: `<motion.div>` optimistic framer-motion modal displays color-coded score result and tags.
+
+## AI Help Bot Widget
+
+- Component: `src/components/HelpBot/HelpBot.tsx`
+- Server Action: `src/app/actions/helpBot.ts`
+- **Feature**: Persistent floating chat assistant located in the bottom-right of the screen for authenticated users only.
+- **Constraints**: Follows mobile responsive sizing (375px), does not trigger static-export issues (authentication occurs via client-side `useEffect`), ensures tokens are regulated by limiting request history (max 10 recent messages). Ensures safe generic try-catch blocks to prevent breaking the build pipeline or front-end layout styling.
 ### State Management Policy
 - **URL as Truth:** Use search params (`?q=`, `?lat=`, `?id=`) for UI state (search, filters, selected listing) to allow for deep-linking.
 - **Server Actions:** Use Next.js Server Actions for all mutations (creating listings, sending messages).

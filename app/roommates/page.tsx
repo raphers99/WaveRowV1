@@ -7,6 +7,8 @@ import { Plus, Users, AlertTriangle, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { TabSwitcher } from '@/components/ui'
 import { staggerContainer, fadeUp } from '@/lib/motion'
+import { matchRoommates } from '@/app/actions/matchRoommates'
+import type { RoommateMatchResult } from '@/types'
 
 function getSupabase() {
   return createClient()
@@ -38,6 +40,9 @@ export default function RoommatesPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [hasProfile, setHasProfile] = useState(false)
+  
+  const [matchingId, setMatchingId] = useState<string | null>(null)
+  const [matchResult, setMatchResult] = useState<(RoommateMatchResult & { candidateName: string }) | null>(null)
 
   // Create profile form
   const [budgetMin, setBudgetMin] = useState('')
@@ -197,6 +202,23 @@ export default function RoommatesPage() {
     if (conv) router.push(`/messages?conversation=${conv.id}`)
   }
 
+  async function handleMatch(candidate: RoommateProfile) {
+    if (!userId) { router.push('/login'); return }
+    const myProfileRaw = profiles.find(p => p.user_id === userId)
+    if (!myProfileRaw) { setShowCreate(true); setCreateMode('profile'); return; }
+    
+    setMatchingId(candidate.id)
+    try {
+      // Cast to any to bypass the slight difference with the inline RoommateProfile type
+      const result = await matchRoommates(myProfileRaw as any, candidate as any)
+      setMatchResult({ ...result, candidateName: candidate.name ?? 'Student' })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Match failed to generate')
+    } finally {
+      setMatchingId(null)
+    }
+  }
+
   return (
     <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 96, minHeight: '100dvh', background: 'var(--surface)' }}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px 0' }}>
@@ -262,11 +284,21 @@ export default function RoommatesPage() {
                     </div>
                   </div>
                   {userId && p.user_id !== userId && (
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                      onClick={() => handleMessage(p.user_id)}
-                      style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
-                      Message
-                    </motion.button>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      {hasProfile && (
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                          onClick={() => handleMatch(p)}
+                          disabled={matchingId === p.id}
+                          style={{ background: 'transparent', border: '1.5px solid var(--olive)', color: 'var(--olive)', borderRadius: 10, padding: '8px 16px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13, cursor: matchingId === p.id ? 'wait' : 'pointer' }}>
+                          {matchingId === p.id ? 'Analyzing...' : 'AI Match'}
+                        </motion.button>
+                      )}
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => handleMessage(p.user_id)}
+                        style={{ background: 'var(--olive)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                        Message
+                      </motion.button>
+                    </div>
                   )}
                 </motion.div>
               ))}
@@ -416,6 +448,56 @@ export default function RoommatesPage() {
                     {saving ? 'Creating...' : 'Create Group'}
                   </button>
                 </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Match Result Modal */}
+      <AnimatePresence>
+        {matchResult && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+            onClick={() => setMatchResult(null)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="card" style={{ background: 'white', padding: 24, width: '100%', maxWidth: 400, borderRadius: 24, position: 'relative' }}>
+              
+              <button onClick={() => setMatchResult(null)} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}>
+                ✕
+              </button>
+              
+              <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 700, margin: '0 0 16px', textAlign: 'center', color: 'var(--text-primary)' }}>
+                Match with {matchResult.candidateName}
+              </h3>
+              
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                <div style={{ 
+                  width: 80, height: 80, borderRadius: '50%', 
+                  background: matchResult.score >= 70 ? 'var(--olive)' : matchResult.score >= 40 ? '#f59e0b' : '#ef4444', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', fontFamily: 'var(--font-playfair)', fontSize: 32, fontWeight: 800
+                }}>
+                  {matchResult.score}
+                </div>
+              </div>
+              
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.5, textAlign: 'center', marginBottom: 20 }}>
+                {matchResult.summary}
+              </p>
+
+              {matchResult.dealbreakers.length > 0 && (
+                <div>
+                  <p className="label-style" style={{ marginBottom: 8, fontSize: 12 }}>Potential Dealbreakers</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {matchResult.dealbreakers.map((d, i) => (
+                      <span key={i} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: 12, fontWeight: 500, padding: '4px 10px', borderRadius: 99, fontFamily: 'var(--font-dm-sans)' }}>
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
             </motion.div>
           </motion.div>

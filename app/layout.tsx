@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell'
 import { AnalyticsProvider } from '@/components/AnalyticsProvider'
 import { SplashOverlay } from '@/components/SplashOverlay'
 import { ToastProvider } from '@/components/ui/Toast'
+import HelpBot from '@/components/HelpBot/HelpBot'
 import './globals.css'
 
 const playfair = Playfair_Display({ variable: '--font-playfair', subsets: ['latin'], display: 'swap', weight: ['400','700','800'] })
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SplashOverlay />
         <AnalyticsProvider />
         <ToastProvider />
+        <HelpBot />
         <AppShell>{children}</AppShell>
       </body>
     </html>
