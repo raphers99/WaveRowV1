@@ -65,7 +65,10 @@ export async function matchRoommates(
   }
 
   const data = await response.json()
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  // Gemini 2.5-flash is a thinking model — parts may include thinking entries.
+  const parts = data.candidates?.[0]?.content?.parts
+  const textPart = parts?.filter((p: Record<string, unknown>) => 'text' in p && !('thought' in p)).pop()
+  const raw = textPart?.text ?? ''
 
   // Strip markdown code fences if Gemini wraps the JSON
   const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()

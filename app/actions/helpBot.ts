@@ -53,10 +53,14 @@ export async function helpBotAction(
     }
 
     const data = await res.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+    // Gemini 2.5-flash is a thinking model — parts may include thinking entries.
+    // Find the last text part which contains the actual response.
+    const parts = data.candidates?.[0]?.content?.parts
+    const textPart = parts?.filter((p: Record<string, unknown>) => 'text' in p && !('thought' in p)).pop()
+    const text = textPart?.text
 
     if (!text) {
-      console.error('No content found in Gemini response')
+      console.error('No content found in Gemini response:', JSON.stringify(data).slice(0, 500))
       return 'Something went wrong — try again'
     }
 

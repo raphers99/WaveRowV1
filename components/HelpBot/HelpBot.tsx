@@ -62,7 +62,7 @@ export default function HelpBot() {
   }
 
   return (
-    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
+    <div style={{ position: 'fixed', bottom: 'calc(80px + env(safe-area-inset-bottom))', right: 16, zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', pointerEvents: 'none' }}>
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -168,8 +168,8 @@ export default function HelpBot() {
 
       <style dangerouslySetInnerHTML={{__html: `
         .helpbot-card { width: 360px; height: 480px; }
-        @media (max-width: 400px) {
-          .helpbot-card { width: calc(100vw - 32px); height: 60vh; }
+        @media (max-width: 500px) {
+          .helpbot-card { width: calc(100vw - 32px); height: 55vh; }
         }
       `}} />
     </div>
