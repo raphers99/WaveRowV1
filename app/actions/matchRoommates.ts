@@ -1,3 +1,4 @@
+import { createClient } from '@/lib/supabase/client'
 import type { RoommateProfile, RankedMatch } from '@/types'
 
 const MODEL = 'gemini-2.5-flash'
@@ -123,7 +124,7 @@ export async function matchRoommates(
     .slice(0, 5)
 
   // Persist top results
-  const supabase = await createClient()
+  const supabase = createClient()
   for (const match of results) {
     await supabase.from('roommate_matches').upsert(
       {
