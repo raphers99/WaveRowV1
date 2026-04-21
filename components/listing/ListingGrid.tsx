@@ -5,7 +5,7 @@ import type { ListingGridProps } from '@/types'
 /** Plain grid — nested AnimatePresence + motion keys caused crashes on /listings (React 19 + framer-motion). */
 export function ListingGrid({ listings, onCardClick, onSave, savedIds = new Set() }: ListingGridProps) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5 md:gap-6 lg:gap-8">
       {listings.map(listing => (
         <ListingCard
           key={listing.id}

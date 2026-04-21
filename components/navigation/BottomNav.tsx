@@ -35,7 +35,7 @@ export function BottomNav() {
       borderTop: '0.5px solid rgba(0,103,71,0.1)',
       paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
-      <div style={{ maxWidth: 500, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', height: 64, alignItems: 'center' }}>
+      <div className="w-full h-16 mx-auto items-center grid grid-cols-5 max-w-[500px] md:flex md:justify-between md:px-12 md:max-w-4xl lg:max-w-6xl xl:px-8 xl:max-w-7xl">
         {TABS.map(tab => {
           const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
           const Icon = tab.icon

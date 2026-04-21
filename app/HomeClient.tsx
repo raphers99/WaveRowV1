@@ -535,7 +535,7 @@ export function HomeClient({
         </motion.div>
       </div>
 
-      <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 16px' }}>
+      <div className="mx-auto px-4 md:px-6 lg:px-8 w-full max-w-[1080px] xl:max-w-[1400px] 2xl:max-w-screen-2xl">
 
         {/* ── Logged-out gate: show platform info instead of listings ── */}
         {isAuthenticated === false && (
@@ -582,8 +582,8 @@ export function HomeClient({
 
             {/* Loading */}
             {loading && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-                {[1, 2, 3, 4, 5, 6].map(i => <ListingSkeleton key={i} />)}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5 md:gap-6 lg:gap-8">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <ListingSkeleton key={i} />)}
               </div>
             )}
 
