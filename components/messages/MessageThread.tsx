@@ -127,7 +127,7 @@ export function MessageThread({ conversationId, userId, otherUserId }: { convers
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflowY: 'auto', overscrollBehaviorY: 'contain', padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading ? (
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>Loading...</p>

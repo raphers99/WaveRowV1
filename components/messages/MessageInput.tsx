@@ -15,7 +15,7 @@ export function MessageInput({ onSend, disabled }: { onSend: (body: string) => v
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', background: 'white', borderTop: '1px solid rgba(0,103,71,0.08)' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, padding: '12px 16px', background: 'white', borderTop: '1px solid rgba(0,103,71,0.08)' }}>
       <input
         value={value}
         onChange={e => setValue(e.target.value)}

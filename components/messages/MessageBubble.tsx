@@ -23,7 +23,7 @@ export function MessageBubble({ message, isOwn, onRetry }: { message: Optimistic
     <div style={{ display: 'flex', justifyContent: isOwn ? 'flex-end' : 'flex-start', marginBottom: 8, opacity: isOptimistic ? 0.7 : 1 }}>
       <div style={{
         maxWidth: '75%',
-        background: isOwn ? 'var(--olive)' : 'white',
+        background: isOwn ? '#006747' : 'white',
         color: isOwn ? 'white' : 'var(--text-primary)',
         borderRadius: isOwn ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
         padding: '10px 14px',
