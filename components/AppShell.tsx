@@ -73,7 +73,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {children}
         {!hideChrome && <GlobalFooter />}
       </div>
-      {!hideChrome && <BottomNav />}
+      {(!hideChrome || pathname === '/map' || pathname === '/map/') && <BottomNav />}
     </>
   )
 }
