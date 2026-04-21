@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react'
 
 /**
- * HandwrittenSplash
- * A premium loading screen with a custom SVG handwriting animation.
- * Uses stroke-dasharray/offset for the 'draw' effect.
+ * BrandSplash
+ * Redesigned to use the official Playfair Display font on Tulane Green background.
+ * Simulates a "writing" reveal by masking the text from left to right.
  */
 export default function HandwrittenSplash() {
   const [isVisible, setIsVisible] = useState(true)
@@ -21,10 +21,9 @@ export default function HandwrittenSplash() {
       return
     }
 
-    // Total duration: 2s (draw) + 500ms (hold) = 2.5s before fade
+    // Standard timing: 1.8s animation + 500ms pause + 600ms fade out
     const timer = setTimeout(() => {
       setIsFadingOut(true)
-      // Allow 600ms for the CSS transition to complete before unmounting
       setTimeout(() => {
         setIsVisible(false)
       }, 600)
@@ -37,85 +36,83 @@ export default function HandwrittenSplash() {
 
   return (
     <div
-      className="splash-overlay"
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: '#FAFAF8',
+        backgroundColor: '#006747', // Tulane Green
         zIndex: 999999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        transition: 'opacity 600ms cubic-bezier(0.4, 0, 1, 1)',
+        transition: 'opacity 600ms cubic-bezier(0.4, 0, 0.2, 1)',
         opacity: isFadingOut ? 0 : 1,
         pointerEvents: isFadingOut ? 'none' : 'auto',
       }}
     >
-      <div style={{ width: 'min(85vw, 450px)', textAlign: 'center' }}>
-        <svg
-          viewBox="0 0 500 120"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ color: '#1A1A1A', width: '100%', height: 'auto' }}
+      <div style={{ position: 'relative', textAlign: 'center' }}>
+        <h1 
+          className="brand-logo-text"
+          style={{ 
+            fontFamily: 'var(--font-playfair)', 
+            fontSize: 'min(64px, 15vw)', 
+            fontWeight: 800, 
+            color: 'white', 
+            margin: 0,
+            letterSpacing: '-0.02em',
+            position: 'relative',
+            display: 'inline-block',
+            // Simple fallbacks for non-WebKit browsers
+            maskImage: 'linear-gradient(to right, white var(--reveal-percent), transparent var(--reveal-percent))',
+            WebkitMaskImage: 'linear-gradient(to right, white var(--reveal-percent), transparent var(--reveal-percent))',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+          }}
         >
-          {/* Handwritten-style WaveRow lettering using SVG paths */}
-          {/* W */}
-          <path 
-            d="M50 80C55 50 65 30 75 30C85 30 75 80 90 80C105 80 115 30 130 30" 
-            className="draw-path"
-            style={{ strokeDasharray: 200, strokeDashoffset: 200, animation: 'draw 1.8s ease-in-out forwards' }}
-          />
-          {/* a */}
-          <path 
-            d="M145 65C145 55 160 55 160 65C160 75 145 75 145 65M160 55V75" 
-            className="draw-path"
-            style={{ strokeDasharray: 100, strokeDashoffset: 100, animation: 'draw 1.4s ease-in-out forwards 0.3s' }}
-          />
-          {/* v */}
-          <path 
-            d="M175 55L185 75L195 55" 
-            className="draw-path"
-            style={{ strokeDasharray: 100, strokeDashoffset: 100, animation: 'draw 1.2s ease-in-out forwards 0.6s' }}
-          />
-          {/* e */}
-          <path 
-            d="M210 65H230C230 55 210 55 210 65C210 75 230 75 230 65" 
-            className="draw-path"
-            style={{ strokeDasharray: 120, strokeDashoffset: 120, animation: 'draw 1.5s ease-in-out forwards 0.8s' }}
-          />
-          {/* R */}
-          <path 
-            d="M260 80V30C260 30 290 20 290 40C290 60 260 55 260 55L290 80" 
-            className="draw-path"
-            style={{ strokeDasharray: 200, strokeDashoffset: 200, animation: 'draw 1.8s ease-in-out forwards 1.1s' }}
-          />
-          {/* o */}
-          <path 
-            d="M310 65C310 55 330 55 330 65C330 75 310 75 310 65" 
-            className="draw-path"
-            style={{ strokeDasharray: 120, strokeDashoffset: 120, animation: 'draw 1.4s ease-in-out forwards 1.4s' }}
-          />
-          {/* w */}
-          <path 
-            d="M350 55V75C350 75 365 85 375 75C385 65 375 55 375 55V75C375 75 390 85 400 75" 
-            className="draw-path"
-            style={{ strokeDasharray: 200, strokeDashoffset: 200, animation: 'draw 1.8s ease-in-out forwards 1.6s' }}
-          />
-        </svg>
+          WaveRow
+        </h1>
+        
+        {/* Subtle underline that also "writes" out */}
+        <div 
+          style={{
+            height: '2px',
+            backgroundColor: 'rgba(255,255,255,0.4)',
+            marginTop: '8px',
+            borderRadius: '1px',
+            animation: 'drawUnderline 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards 0.4s',
+            width: 0,
+            margin: '8px auto 0'
+          }}
+        />
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes draw {
+        @property --reveal-percent {
+          syntax: '<percentage>';
+          inherits: false;
+          initial-value: 0%;
+        }
+
+        .brand-logo-text {
+          animation: revealWriting 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+
+        @keyframes revealWriting {
+          from {
+            --reveal-percent: 0%;
+            opacity: 0.5;
+            transform: translateY(2px);
+          }
           to {
-            stroke-dashoffset: 0;
+            --reveal-percent: 100%;
+            opacity: 1;
+            transform: translateY(0);
           }
         }
-        .draw-path {
-          /* Add a subtle variable stroke feel if possible, 
-             otherwise keep it clean as requested */
+
+        @keyframes drawUnderline {
+          to {
+            width: 60%;
+          }
         }
       `}} />
     </div>
