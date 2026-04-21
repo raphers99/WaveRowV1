@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/navigation'
 import { fadeUp } from '@/lib/motion'
 
-type Mode = 'pick' | 'landlord'
+type Mode = 'pick' | 'landlord' | 'studentEmail' | 'studentCode'
 type LandlordTab = 'signin' | 'signup'
 
 function LoginPageInner() {
@@ -20,33 +20,89 @@ function LoginPageInner() {
   const [landlordTab, setLandlordTab] = useState<LandlordTab>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState('')
+  const [resendTimer, setResendTimer] = useState(0)
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([])
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const t = setTimeout(() => setResendTimer(resendTimer - 1), 1000)
+      return () => clearTimeout(t)
+    }
+  }, [resendTimer])
 
   function reset() {
     setMode('pick')
     setEmail('')
     setPassword('')
+    setCode(['', '', '', '', '', ''])
     setFormError('')
     setLoading(false)
+    setResendTimer(0)
   }
 
-  async function handleGoogleSignIn() {
-    setLoading(true)
-    setFormError('')
+  async function handleSendCode() {
+    if (!email) { setFormError('Please enter your email.'); return }
+    if (!email.trim().toLowerCase().endsWith('@tulane.edu')) { setFormError('Only @tulane.edu emails can sign in as a student.'); return }
+    setLoading(true); setFormError('')
     const supabase = createClient()
-    const { error: e } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        queryParams: { hd: 'tulane.edu' },
-      },
+    const { error: e } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { data: { role: 'student' }, shouldCreateUser: true },
     })
-    if (e) {
-      setFormError(e.message)
-      setLoading(false)
+    setLoading(false)
+    if (e) { setFormError(e.message); return }
+    setResendTimer(60)
+    setMode('studentCode')
+  }
+
+  async function handleVerifyCode() {
+    const token = code.join('')
+    if (token.length < 6) { setFormError('Enter the full 6-digit code.'); return }
+    setLoading(true); setFormError('')
+    const supabase = createClient()
+    const { data, error: e } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token, type: 'email' })
+    if (e) { setFormError('Invalid code. Please try again.'); setLoading(false); return }
+    if (data.user) {
+      const { data: existing } = await supabase
+        .from('profiles').select('id').eq('user_id', data.user.id).maybeSingle()
+      if (!existing) {
+        await supabase.from('profiles').insert({
+          user_id: data.user.id,
+          name: email.split('@')[0],
+          role: 'student',
+          verified: true,
+          verification_status: 'verified',
+          verification_type: 'student',
+        })
+      }
     }
-    // On success the browser redirects — no need to setLoading(false)
+    router.replace(next)
+  }
+
+  function handleResendCode() {
+    if (resendTimer > 0) return
+    handleSendCode()
+  }
+
+  function handleCodeInput(val: string, i: number) {
+    if (!/^\d*$/.test(val)) return
+    const nextCode = [...code]
+    nextCode[i] = val.slice(-1)
+    setCode(nextCode)
+    setFormError('')
+    if (val && i < 5) inputRefs.current[i + 1]?.focus()
+    if (!val && i > 0) inputRefs.current[i - 1]?.focus()
+  }
+
+  function handleCodePaste(e: React.ClipboardEvent) {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pasted.length === 6) {
+      setCode(pasted.split(''))
+      inputRefs.current[5]?.focus()
+    }
   }
 
   async function handleLandlordAuth() {
@@ -126,21 +182,14 @@ function LoginPageInner() {
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', marginBottom: 16, textAlign: 'center' }}>Who are you?</p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {/* Student — Google */}
-                <motion.button whileTap={{ scale: loading ? 1 : 0.98 }} onClick={handleGoogleSignIn} disabled={loading}
-                  style={{ padding: '20px', borderRadius: 16, border: '2px solid rgba(0,103,71,0.15)', background: 'white', cursor: loading ? 'not-allowed' : 'pointer', textAlign: 'left', opacity: loading ? 0.7 : 1 }}>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', margin: '0 0 4px' }}>Student</p>
-                  <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: '0 0 14px' }}>Sign in with your @tulane.edu Google account</p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '11px 16px', background: 'white', border: '1.5px solid rgba(0,0,0,0.12)', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                    <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                      <path fill="none" d="M0 0h48v48H0z"/>
-                    </svg>
-                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>{loading ? 'Redirecting…' : 'Continue with Google'}</span>
+                {/* Student */}
+                <motion.button whileTap={{ scale: 0.98 }} onClick={() => setMode('studentEmail')}
+                  style={{ padding: '20px', borderRadius: 16, border: '2px solid rgba(0,103,71,0.15)', background: 'white', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', margin: '0 0 2px' }}>Student</p>
+                    <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>Sign in with your @tulane.edu email</p>
                   </div>
+                  <span style={{ fontSize: 18, color: 'var(--text-muted)' }}>→</span>
                 </motion.button>
 
                 {/* Landlord */}
@@ -152,6 +201,71 @@ function LoginPageInner() {
                   </div>
                   <span style={{ fontSize: 18, color: 'var(--text-muted)' }}>→</span>
                 </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Student Email Form */}
+          {mode === 'studentEmail' && (
+            <motion.div key="studentEmail" variants={fadeUp} initial="hidden" animate="visible" exit={{ opacity: 0, y: -8 }}>
+              <button onClick={reset} style={{ background: 'none', border: 'none', color: 'var(--olive)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500, cursor: 'pointer', padding: 0, marginBottom: 20 }}>← Back</button>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>Student Sign In</h2>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)', margin: '0 0 20px' }}>Enter your Tulane email address to get started.</p>
+
+              <p className="label-style" style={{ marginBottom: 6 }}>Email</p>
+              <input className="input" type="email" value={email}
+                onChange={e => { setEmail(e.target.value); setFormError('') }}
+                placeholder="you@tulane.edu" autoCapitalize="none" spellCheck={false}
+                onKeyDown={e => { if (e.key === 'Enter') handleSendCode() }}
+                style={{ marginBottom: 4 }}
+              />
+
+              {formError && <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#ef4444', marginTop: 10 }}>{formError}</p>}
+            </motion.div>
+          )}
+
+          {/* Student Code Input */}
+          {mode === 'studentCode' && (
+            <motion.div key="studentCode" variants={fadeUp} initial="hidden" animate="visible" exit={{ opacity: 0, y: -8 }}>
+              <button onClick={() => { setMode('studentEmail'); setCode(['','','','','','']); setFormError('') }} style={{ background: 'none', border: 'none', color: 'var(--olive)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500, cursor: 'pointer', padding: 0, marginBottom: 20 }}>← Edit email</button>
+              
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: 20, background: 'rgba(0,103,71,0.08)', marginBottom: 16 }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--olive)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                </div>
+                <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>Check your email</h2>
+                <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  We sent a 6-digit code to <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 24 }} onPaste={handleCodePaste}>
+                {code.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={el => { inputRefs.current[i] = el }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleCodeInput(e.target.value, i)}
+                    onKeyDown={e => { if (e.key === 'Backspace' && !digit && i > 0) inputRefs.current[i - 1]?.focus() }}
+                    autoFocus={i === 0}
+                    style={{ width: 44, height: 52, textAlign: 'center', fontSize: 22, fontWeight: 700, border: `2px solid ${digit ? 'var(--olive)' : 'rgba(0,103,71,0.15)'}`, borderRadius: 12, outline: 'none', background: 'white', fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)', transition: 'border-color 0.15s' }}
+                  />
+                ))}
+              </div>
+
+              {formError && <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#ef4444', marginBottom: 12, textAlign: 'center' }}>{formError}</p>}
+
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  onClick={handleResendCode}
+                  disabled={resendTimer > 0 || loading}
+                  style={{ background: 'none', border: 'none', color: resendTimer > 0 ? 'var(--text-muted)' : 'var(--olive)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600, cursor: resendTimer > 0 ? 'default' : 'pointer' }}
+                >
+                  {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
+                </button>
               </div>
             </motion.div>
           )}
@@ -194,13 +308,27 @@ function LoginPageInner() {
         </AnimatePresence>
       </div>
 
-      {/* Landlord submit button */}
-      {mode === 'landlord' && (
+      {/* Sticky action button */}
+      {mode !== 'pick' && (
         <div style={{ flexShrink: 0, padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', background: 'rgba(250,250,248,0.98)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderTop: '0.5px solid rgba(0,103,71,0.08)' }}>
-          <motion.button whileTap={{ scale: 0.98 }} onClick={handleLandlordAuth} disabled={loading || !canSubmit}
-            style={{ width: '100%', background: canSubmit ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
-            {loading ? 'Please wait…' : landlordTab === 'signin' ? 'Sign In' : 'Create Account'}
-          </motion.button>
+          {mode === 'landlord' && (
+            <motion.button whileTap={{ scale: 0.98 }} onClick={handleLandlordAuth} disabled={loading || !canSubmit}
+              style={{ width: '100%', background: canSubmit ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: canSubmit ? 'pointer' : 'not-allowed' }}>
+              {loading ? 'Please wait…' : landlordTab === 'signin' ? 'Sign In' : 'Create Account'}
+            </motion.button>
+          )}
+          {mode === 'studentEmail' && (
+            <motion.button whileTap={{ scale: 0.98 }} onClick={handleSendCode} disabled={loading || !email}
+              style={{ width: '100%', background: email ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: email ? 'pointer' : 'not-allowed' }}>
+              {loading ? 'Sending…' : 'Send Code'}
+            </motion.button>
+          )}
+          {mode === 'studentCode' && (
+            <motion.button whileTap={{ scale: 0.98 }} onClick={handleVerifyCode} disabled={loading || code.join('').length < 6}
+              style={{ width: '100%', background: code.join('').length === 6 ? 'var(--olive)' : 'rgba(0,103,71,0.3)', color: 'white', border: 'none', borderRadius: 14, padding: '14px', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 16, cursor: code.join('').length === 6 ? 'pointer' : 'not-allowed' }}>
+              {loading ? 'Verifying…' : 'Verify & Continue'}
+            </motion.button>
+          )}
         </div>
       )}
     </div>
