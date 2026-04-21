@@ -7,6 +7,9 @@ import { HomeClient } from './HomeClient'
 import type { Listing } from '@/types'
 
 const PAGE_SIZE = 40
+// Tulane campus center (Laverck Berner Centre area)
+const CAMPUS_LAT = 29.9405
+const CAMPUS_LNG = -90.1182
 
 function HomeInner() {
   const searchParams = useSearchParams()
@@ -23,6 +26,8 @@ function HomeInner() {
   const priceMax = priceMaxParam ? parseInt(priceMaxParam, 10) : null
   const available = searchParams.get('available') ?? null
   const sort = searchParams.get('sort') ?? 'newest'
+  const distanceParam = searchParams.get('distance')
+  const distanceMiles = distanceParam ? parseFloat(distanceParam) : null
 
   const [listings, setListings] = useState<Listing[]>([])
   const [hasMore, setHasMore] = useState(false)
@@ -62,6 +67,15 @@ function HomeInner() {
     if (priceMin !== null) query = query.gte('rent', priceMin)
     if (priceMax !== null) query = query.lte('rent', priceMax)
     if (available !== null) query = query.gte('available_from', `${available}-01`)
+    if (distanceMiles !== null) {
+      const latDelta = distanceMiles / 69
+      const lngDelta = distanceMiles / (69 * Math.cos(CAMPUS_LAT * Math.PI / 180))
+      query = query
+        .gte('lat', CAMPUS_LAT - latDelta)
+        .lte('lat', CAMPUS_LAT + latDelta)
+        .gte('lng', CAMPUS_LNG - lngDelta)
+        .lte('lng', CAMPUS_LNG + lngDelta)
+    }
     if (sort === 'price_asc') query = query.order('rent', { ascending: true })
     else if (sort === 'price_desc') query = query.order('rent', { ascending: false })
     else query = query.order('created_at', { ascending: false })
@@ -79,7 +93,7 @@ function HomeInner() {
     } finally {
       setInitialLoading(false)
     }
-  }, [furnished, pets, sublet, beds, priceMin, priceMax, available, sort])
+  }, [furnished, pets, sublet, beds, priceMin, priceMax, available, sort, distanceMiles])
 
   // Fetch when auth resolves (and only when logged in)
   useEffect(() => {

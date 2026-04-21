@@ -49,6 +49,8 @@ function FilterBar() {
   const priceMax = searchParams.get('price_max') ?? ''
   const furnished = searchParams.get('furnished') === 'true'
   const available = searchParams.get('available') ?? ''
+  const sort = searchParams.get('sort') ?? ''
+  const distance = searchParams.get('distance') ?? ''
 
   // Local draft state — only committed on "Show Results"
   const [draftBeds, setDraftBeds] = useState(beds ?? '')
@@ -56,6 +58,8 @@ function FilterBar() {
   const [draftPriceMax, setDraftPriceMax] = useState(priceMax)
   const [draftFurnished, setDraftFurnished] = useState(furnished)
   const [draftAvailable, setDraftAvailable] = useState(available)
+  const [draftSort, setDraftSort] = useState(sort)
+  const [draftDistance, setDraftDistance] = useState(distance || '2')
 
   // Sync draft when sheet opens
   function handleOpen() {
@@ -64,6 +68,8 @@ function FilterBar() {
     setDraftPriceMax(priceMax)
     setDraftFurnished(furnished)
     setDraftAvailable(available)
+    setDraftSort(sort)
+    setDraftDistance(distance || '2')
     setOpen(true)
   }
 
@@ -74,6 +80,8 @@ function FilterBar() {
       price_max: draftPriceMax || null,
       furnished: draftFurnished ? 'true' : null,
       available: draftAvailable || null,
+      sort: draftSort || null,
+      distance: draftDistance !== '2' ? draftDistance : null,
     }), { scroll: false })
     setOpen(false)
   }
@@ -81,13 +89,13 @@ function FilterBar() {
   function clearAll() {
     router.push(buildUrl(searchParams, {
       beds: null, price_min: null, price_max: null,
-      furnished: null, available: null,
+      furnished: null, available: null, sort: null, distance: null,
     }), { scroll: false })
     setOpen(false)
   }
 
   const activeCount = [
-    !!beds, !!priceMin, !!priceMax, furnished, !!available,
+    !!beds, !!priceMin, !!priceMax, furnished, !!available, !!sort, !!distance,
   ].filter(Boolean).length
 
   const sectionLabel: React.CSSProperties = {
@@ -279,9 +287,45 @@ function FilterBar() {
 
               {/* FURNISHED */}
               <p style={sectionLabel}>Furnished</p>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
                 {pillBtn('Any', !draftFurnished, () => setDraftFurnished(false))}
                 {pillBtn('Furnished', draftFurnished, () => setDraftFurnished(true))}
+              </div>
+
+              {/* SORT BY */}
+              <p style={sectionLabel}>Sort By</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                {pillBtn('Newest', draftSort === '' || draftSort === 'newest', () => setDraftSort('newest'))}
+                {pillBtn('Price: Low → High', draftSort === 'price_asc', () => setDraftSort('price_asc'))}
+                {pillBtn('Price: High → Low', draftSort === 'price_desc', () => setDraftSort('price_desc'))}
+              </div>
+
+              {/* DISTANCE FROM CAMPUS */}
+              <p style={sectionLabel}>Distance from Campus</p>
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-muted)' }}>
+                    Within <strong style={{ color: 'var(--olive)' }}>{parseFloat(draftDistance).toFixed(1)} mi</strong> of campus
+                  </span>
+                  {draftDistance !== '2' && (
+                    <button onClick={() => setDraftDistance('2')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-muted)', padding: 0 }}>
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="range"
+                  min="0.25"
+                  max="2"
+                  step="0.25"
+                  value={draftDistance}
+                  onChange={e => setDraftDistance(e.target.value)}
+                  style={{ width: '100%', accentColor: 'var(--olive)', cursor: 'pointer', height: 4 }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text-muted)' }}>0.25 mi</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text-muted)' }}>2 mi</span>
+                </div>
               </div>
 
             </div>
