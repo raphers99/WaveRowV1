@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { RoommateProfile, RoommateMatchResult } from '@/types'
 
-const MODEL = 'claude-sonnet-4-20250514'
+const MODEL = 'gemini-2.0-flash'
 
 function buildPrompt(mine: RoommateProfile, candidate: RoommateProfile): string {
   const pick = (p: RoommateProfile) => ({
@@ -33,38 +33,46 @@ export async function matchRoommates(
   myProfile: RoommateProfile,
   candidateProfile: RoommateProfile,
 ): Promise<RoommateMatchResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured.')
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured.')
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1000,
-      system:
-        'You are a roommate compatibility engine for a student housing app. ' +
-        'Return ONLY valid JSON, no markdown, no preamble.',
-      messages: [{ role: 'user', content: buildPrompt(myProfile, candidateProfile) }],
-    }),
-  })
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            {
+              text: 'You are a roommate compatibility engine for a student housing app. Return ONLY valid JSON, no markdown, no preamble.',
+            },
+          ],
+        },
+        contents: [
+          { role: 'user', parts: [{ text: buildPrompt(myProfile, candidateProfile) }] },
+        ],
+        generationConfig: {
+          maxOutputTokens: 1000,
+        },
+      }),
+    }
+  )
 
   if (!response.ok) {
     const body = await response.text()
-    throw new Error(`Anthropic API error ${response.status}: ${body}`)
+    throw new Error(`Gemini API error ${response.status}: ${body}`)
   }
 
-  type AnthropicResponse = { content: Array<{ type: string; text: string }> }
-  const data = (await response.json()) as AnthropicResponse
-  const raw = data.content.find(c => c.type === 'text')?.text ?? ''
+  const data = await response.json()
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+
+  // Strip markdown code fences if Gemini wraps the JSON
+  const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(raw)
+    parsed = JSON.parse(cleaned)
   } catch {
     throw new Error('AI returned unparseable response — please try again.')
   }
