@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { RoommateProfile, RoommateMatchResult } from '@/types'
 
-const MODEL = 'gemini-2.0-flash'
+const MODEL = 'gemini-2.5-flash'
 
 function buildPrompt(mine: RoommateProfile, candidate: RoommateProfile): string {
   const pick = (p: RoommateProfile) => ({
