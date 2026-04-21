@@ -1,5 +1,3 @@
-'use server'
-
 const MODEL = 'gemini-2.5-flash'
 
 export async function helpBotAction(
@@ -7,9 +5,9 @@ export async function helpBotAction(
   newMessage: string
 ): Promise<string> {
   try {
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
     if (!apiKey) {
-      console.error('Missing GEMINI_API_KEY environment variable.')
+      console.error('Missing NEXT_PUBLIC_GEMINI_API_KEY environment variable.')
       return 'Something went wrong — try again'
     }
 
