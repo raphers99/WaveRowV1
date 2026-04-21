@@ -12,19 +12,8 @@ BEGIN
     RAISE EXCEPTION 'No user found in profiles table. Log in first, then re-run.';
   END IF;
 
-  -- Remove any prior seed listings so this is idempotent
-  DELETE FROM listings WHERE user_id = owner_id AND title IN (
-    'Room avaible in 3bd house near Freret',
-    'Sublet for Fall semester (Aug-Dec)',
-    '1 roomate needed for double shotgun',
-    'Summer sublet - utilites included',
-    'Lease takeover near Tulane',
-    'Huge room in shared house on Calhoun',
-    'Cozy 1br apt near Loyola',
-    'Looking for roomate - Spring semester',
-    'Cheap room in old uptown house',
-    'Furnised room for sublease ASAP'
-  );
+  -- Force delete ALL listings for this seed user to wipe out ghost properties from v1
+  DELETE FROM listings WHERE user_id = owner_id;
 
   INSERT INTO listings (
     user_id, title, type, address, neighborhood,
@@ -34,41 +23,41 @@ BEGIN
     available_from, available_to, distance_to_campus
   ) VALUES
 
-  -- 1: Locally generated student bedroom (Unique)
+  -- 1
   (owner_id, 'Room avaible in 3bd house near Freret', 'house',
    '4512 Freret St, New Orleans, LA 70115', 'Freret',
    29.9384, -90.1143, 850, 850, 3, 1, 1200,
    false, true, false,
    ARRAY[
-     '/seed/student-bedroom.png',
-     'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800'
+     'https://images.unsplash.com/photo-1555198083-d9d15c2d43e5?w=800',
+     'https://images.unsplash.com/photo-1598928506311-c55dd1b62145?w=800'
    ],
    ARRAY['Washer/Dryer','AC','Parking'],
    ARRAY['Walk to campus','Next to dat dog'],
    'Looking for 1 roomate to fill a room in our 3bd/1ba house just off Freret. Rent is 850 + utilites usually around $100. We are 2 juniors, keep things pretty chill. We have a cat so must be ok with pets.',
    'ACTIVE', false, '2026-08-01', null, '0.4 miles'),
 
-  -- 2: Locally generated shared kitchen (Unique)
+  -- 2
   (owner_id, 'Sublet for Fall semester (Aug-Dec)', 'apartment',
    '1538 Broadway St, New Orleans, LA 70118', 'Carrollton',
    29.9462, -90.1228, 900, 900, 1, 1, 450,
    true, false, true,
    ARRAY[
-     '/seed/shared-kitchen.png',
-     'https://images.unsplash.com/photo-1598928506311-c55dd1b62145?w=800'
+     'https://images.unsplash.com/photo-1496030758416-dd3e88dc6678?w=800',
+     'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800'
    ],
    ARRAY['Wifi','AC','Utilities'],
    ARRAY['Super close to campus','Walk to bootcamp'],
    'Im going abroad next fall and need someone to sublet my room. It''s a 1 bed 1 bath, totally furnised with an ikea bed and desk. Rent includes all utilites. Super easy walk to campus.',
    'ACTIVE', true, '2026-08-15', '2026-12-20', '0.2 miles'),
 
-  -- 3: Locally generated apartment bathroom (Unique)
+  -- 3
   (owner_id, '1 roomate needed for double shotgun', 'house',
    '7301 Willow St, New Orleans, LA 70118', 'Carrollton',
    29.9410, -90.1155, 750, 750, 4, 2, 1600,
    false, true, false,
    ARRAY[
-     '/seed/apartment-bathroom.png',
+     'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800',
      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800'
    ],
    ARRAY['Parking','AC','Dishwasher'],
@@ -76,7 +65,7 @@ BEGIN
    'One room avaible in a 4 person group. We already signed the lease and one person dropped out. House is a older shotgun double but has a nice little backyard. $750/month rent.',
    'ACTIVE', false, '2026-08-01', null, '0.3 miles'),
 
-  -- 4: Modest Unsplash room
+  -- 4
   (owner_id, 'Summer sublet - utilites included', 'apartment',
    '7900 Maple St, New Orleans, LA 70118', 'Carrollton',
    29.9420, -90.1196, 700, 700, 1, 1, 400,
@@ -89,7 +78,7 @@ BEGIN
    'Summer sublet (June to mid August). It''s a small furnised place right on Maple st. Really cheap rent for the summer, 700 flat covers internet and power.',
    'ACTIVE', true, '2026-06-01', '2026-08-15', '0.1 miles'),
 
-  -- 5: Cluttered living space
+  -- 5
   (owner_id, 'Lease takeover near Tulane', 'house',
    '1203 Nashville Ave, New Orleans, LA 70115', 'Uptown',
    29.9296, -90.1108, 1100, 1100, 2, 2, 1100,
@@ -102,20 +91,20 @@ BEGIN
    'Need to get out of my lease early. 2 roomates currently living there, but my room has its own bathroom. You would just be taking over the rest of my lease starting next month.',
    'ACTIVE', true, '2026-09-01', '2027-05-31', '0.9 miles'),
 
-  -- 6: Basic exterior
+  -- 6
   (owner_id, 'Huge room in shared house on Calhoun', 'house',
    '4908 Calhoun St, New Orleans, LA 70118', 'Uptown',
    29.9379, -90.1089, 950, 950, 3, 2, 1400,
    false, true, false,
    ARRAY[
-     'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=800'
+     'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800'
    ],
    ARRAY['Washer/Dryer','Parking','Dishwasher'],
    ARRAY['Quiet street','Near Audubon Zoo'],
    'Looking for a 3rd roomate for our house on Calhoun. Room is massive with a good closet. We are 2 seniors at Tulane. House is a bit older but landlord is responsive.',
    'ACTIVE', false, '2026-08-01', null, '0.7 miles'),
 
-  -- 7: Older interior
+  -- 7
   (owner_id, 'Cozy 1br apt near Loyola', 'apartment',
    '6601 St. Charles Ave, New Orleans, LA 70118', 'Uptown',
    29.9361, -90.1210, 1350, 1350, 1, 1, 550,
@@ -128,7 +117,7 @@ BEGIN
    'Its a tight squeeze but great if you want to live alone. 1br apartment right off St charles. Unfurnished but I can leave the desk and couch if you want.',
    'ACTIVE', false, '2026-08-15', null, '0.4 miles'),
 
-  -- 8: Basic apartment kitchen
+  -- 8
   (owner_id, 'Looking for roomate - Spring semester', 'apartment',
    '3409 Magazine St, New Orleans, LA 70115', 'Garden District',
    29.9264, -90.1075, 1000, 1000, 2, 1, 900,
@@ -141,7 +130,7 @@ BEGIN
    'My roomate is studying abroad in spring so I need someone to cover his half of rent from Jan-May. It is fully furnised. Right on magazine street.',
    'ACTIVE', true, '2027-01-01', '2027-05-31', '1.3 miles'),
 
-  -- 9: Messy bedroom Unsplash
+  -- 9
   (owner_id, 'Cheap room in old uptown house', 'house',
    '2840 Jefferson Ave, New Orleans, LA 70115', 'Uptown',
    29.9302, -90.1130, 650, 650, 4, 1, 1500,
@@ -154,13 +143,13 @@ BEGIN
    'We need a 4th person to sign the lease with us. The house is def old and only has 1 bathroom but rent is super cheap ($650). AC works fine most of the time.',
    'ACTIVE', false, '2026-08-01', null, '0.8 miles'),
 
-  -- 10: Older small house exterior
+  -- 10
   (owner_id, 'Furnised room for sublease ASAP', 'apartment',
    '8120 Oak St, New Orleans, LA 70118', 'Carrollton',
    29.9476, -90.1280, 800, 800, 2, 1, 800,
    true, false, false,
    ARRAY[
-     'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800'
+     'https://images.unsplash.com/photo-1588661962386-a2cb705fccb8?w=800'
    ],
    ARRAY['AC'],
    ARRAY['Near Jacques imos'],
