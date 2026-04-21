@@ -34,6 +34,9 @@ export function ListingCard({ listing, onClick, onSave, isSaved }: ListingCardPr
           {listing.is_sublease && <div style={{ position: 'absolute', top: 10, left: 10 }}><SubletBadge /></div>}
         </div>
         <div style={{ padding: '12px 14px 14px' }}>
+          <h3 style={{ fontFamily: 'var(--font-playfair)', fontSize: 18, color: 'var(--text-primary)', margin: '0 0 6px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {listing.title}
+          </h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
             <PriceTag price={listing.rent} />
           </div>
