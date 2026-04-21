@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
 import AppShell from '@/components/AppShell'
 import { AnalyticsProvider } from '@/components/AnalyticsProvider'
-import { SplashOverlay } from '@/components/SplashOverlay'
+
 import { ToastProvider } from '@/components/ui/Toast'
 import HelpBot from '@/components/HelpBot/HelpBot'
+import { NativeBridge } from '@/components/NativeBridge'
+import HandwrittenSplash from '@/components/HandwrittenSplash'
 import './globals.css'
 
 const playfair = Playfair_Display({ variable: '--font-playfair', subsets: ['latin'], display: 'swap', weight: ['400','700','800'] })
@@ -47,30 +49,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} data-scroll-behavior="smooth">
       <body style={{ backgroundColor: 'var(--surface)', minHeight: '100dvh' }}>
+        <HandwrittenSplash />
+        <NativeBridge />
         <AnalyticsProvider />
         <ToastProvider />
         <HelpBot />
         <AppShell>{children}</AppShell>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
-                  window.Capacitor.Plugins.SplashScreen.hide();
-                } else {
-                  // Fallback: manually import and hide
-                  import('@capacitor/core').then(({ Capacitor }) => {
-                    if (Capacitor.isNativePlatform()) {
-                      import('@capacitor/splash-screen').then(({ SplashScreen }) => {
-                        SplashScreen.hide({ fadeOutDuration: 200 });
-                      });
-                    }
-                  }).catch(() => {});
-                }
-              } catch (e) {}
-            `
-          }}
-        />
       </body>
     </html>
   )

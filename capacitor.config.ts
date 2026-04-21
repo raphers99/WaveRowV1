@@ -26,7 +26,7 @@ const config: CapacitorConfig = {
     },
     SplashScreen: {
       launchShowDuration: 0,   // show native splash as briefly as possible
-      launchAutoHide: false,   // we call SplashScreen.hide() manually in JS
+      launchAutoHide: true,   // let native splash hide automatically
       backgroundColor: '#006747',
     },
     StatusBar: {
