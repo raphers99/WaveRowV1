@@ -61,6 +61,14 @@ export type RoommateMatchResult = {
   dealbreakers: string[];
 }
 
+export type RankedMatch = {
+  candidate_id: string;
+  name: string;
+  score: number;
+  summary: string;
+  dealbreakers: string[];
+}
+
 export type RoommateMatch = {
   id: string; user_id: string; candidate_id: string;
   score: number; summary: string; dealbreakers: string[];
