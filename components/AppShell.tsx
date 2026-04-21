@@ -11,7 +11,8 @@ function hideChromeForPath(pathname: string) {
   const editListing = pathname === '/listing/edit' || pathname === '/listing/edit/'
   // Map page: footer makes the page scrollable, which intercepts touch pan gestures
   const map = pathname === '/map' || pathname === '/map/'
-  return login || newListing || editListing || map
+  const messages = pathname === '/messages' || pathname === '/messages/' || pathname.startsWith('/messages/')
+  return login || newListing || editListing || map || messages
 }
 
 function GlobalFooter() {
@@ -73,7 +74,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {children}
         {!hideChrome && <GlobalFooter />}
       </div>
-      {(!hideChrome || pathname === '/map' || pathname === '/map/') && <BottomNav />}
+      {(!hideChrome || pathname === '/map' || pathname === '/map/' || pathname === '/messages' || pathname.startsWith('/messages/')) && <BottomNav />}
     </>
   )
 }

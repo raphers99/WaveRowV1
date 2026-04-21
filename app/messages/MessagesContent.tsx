@@ -57,14 +57,37 @@ export function MessagesContent() {
   const otherUserId = active ? (active.participant_one === userId ? active.participant_two : active.participant_one) : ''
 
   return (
-    <div style={{ paddingTop: 'calc(56px + env(safe-area-inset-top))', paddingBottom: 'calc(64px + env(safe-area-inset-bottom))', height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ width: active ? '0' : '100%', overflowY: 'auto', borderRight: active ? '0.5px solid rgba(0,103,71,0.08)' : 'none', display: 'flex', flexDirection: 'column', transition: 'width 0.2s' }}>
+    <div style={{
+      height: '100dvh',
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'var(--surface)',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      overflow: 'hidden'
+    }}>
+      {/* Header Space */}
+      <div style={{ height: 'calc(56px + env(safe-area-inset-top))' }} />
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+        {/* Conversation List */}
+        <div style={{
+          width: activeId ? '0' : '100%',
+          opacity: activeId ? 0 : 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'all 0.2s ease-in-out',
+          visibility: activeId ? 'hidden' : 'visible'
+        }}>
           <div style={{ padding: '16px 16px 8px' }}>
             <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Messages</h1>
           </div>
           {loading ? (
-            <p style={{ padding: 16, fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-muted)' }}>Loading...</p>
+            <p style={{ padding: 16, fontSize: 14, color: 'var(--text-muted)' }}>Loading...</p>
           ) : conversations.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center' }}>
               <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
@@ -85,20 +108,42 @@ export function MessagesContent() {
           )}
         </div>
 
+        {/* Message Thread */}
         {activeId && userId && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '0.5px solid rgba(0,103,71,0.08)', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button onClick={() => setActiveId(null)} aria-label="Back" style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 4 }}>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10,
+            background: 'var(--surface)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}>
+            {/* Thread Header */}
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '0.5px solid rgba(0,103,71,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              background: 'var(--surface)'
+            }}>
+              <button onClick={() => setActiveId(null)} style={{ background: 'none', border: 'none', padding: 4 }}>
                 <ChevronLeft size={20} color="var(--text-primary)" />
               </button>
-              <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Conversation</h2>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Conversation</h2>
             </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
+
+            {/* Thread Content */}
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               <MessageThread conversationId={activeId} userId={userId} otherUserId={otherUserId} />
             </div>
           </div>
         )}
       </div>
+
+      {/* Navigation Space */}
+      <div style={{ height: 'calc(64px + env(safe-area-inset-bottom))', background: 'var(--surface)' }} />
     </div>
   )
 }
